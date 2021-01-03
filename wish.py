@@ -1,4 +1,4 @@
-import time
+import asyncio
 import discord
 from discord.ext import commands
 
@@ -11,10 +11,13 @@ class WishCog(commands.Cog):
     async def wish(self, ctx, *args):
         wish = ' '.join(args)
 
-        if ctx.channel.id == 746220388866064474:
-            platform = 'PS4'
-        if ctx.channel.id == 746576322452783175:
+        if ctx.channel.id == 621512611531456531:
+            platform = 'PlayStation'
+        if ctx.channel.id == 621517289187180564:
             platform = 'PC'
+        if ctx.channel.id == 762409446885556265:
+            platform = 'XBox'
+
         else:
             return
         if len(wish) == 0:
@@ -39,14 +42,16 @@ class WishCog(commands.Cog):
     @commands.Cog.listener()
     async def on_message(self, message):
         user = await self.bot.fetch_user(message.author.id)
-        if (message.channel.id == 746220388866064474 or
-            message.channel.id == 746576322452783175) and not user.bot:
+        if (message.channel.id == 762409446885556265 or
+            message.channel.id == 621517289187180564 or
+            message.channel.id == 621512611531456531) and not user.bot:
             await discord.Message.delete(message)
-        if (message.channel.id == 746220388866064474 or
-            message.channel.id == 746576322452783175) and user.bot:
+        if (
+                message.channel.id == 762409446885556265 or
+                message.channel.id == 621517289187180564 or
+                message.channel.id == 621512611531456531) and user.bot:
             emoji = '\U0000274c'
             await discord.Message.add_reaction(message, emoji)
-
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):
@@ -54,7 +59,9 @@ class WishCog(commands.Cog):
         channel = await self.bot.fetch_channel(payload.channel_id)
         message = await channel.fetch_message(payload.message_id)
         embed = None
-        if 746220388866064474 == message.channel.id or 746576322452783175 == message.channel.id:
+        if (762409446885556265 == message.channel.id or
+                621517289187180564 == message.channel.id or
+                621512611531456531 == message.channel.id):
             reaction = payload.emoji
             if message.embeds:
                 embed = message.embeds[0].title
@@ -62,9 +69,8 @@ class WishCog(commands.Cog):
             if str(reaction) == '❌' and not user.bot:
                 await discord.Message.delete(message)
             elif user.bot and str(embed) == 'Riven demands you submit a wish properly':
-                time.sleep(5)
+                await asyncio.sleep(5)
                 await discord.Message.delete(message)
-
 
 def setup(bot):
     bot.add_cog(WishCog(bot))

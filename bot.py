@@ -19,8 +19,9 @@ def get_prefix(bot, message):
 # Below cogs represents our folder our cogs are in. Following is the file name. So 'meme.py' in cogs, would be cogs.meme
 # Think of it like a dot path import
 initial_cogs = ['members', 'owner', 'simple', 'timer']
-
-bot = commands.Bot(command_prefix=get_prefix, description='A bot for GoldxGuns')
+intents = discord.Intents.default()
+intents.members = True
+bot = commands.Bot(command_prefix=get_prefix, description='A bot for GoldxGuns', intents=intents)
 
 # Here we load our extensions(cogs) listed above in [initial_extensions].
 if __name__ == '__main__':
@@ -31,8 +32,6 @@ if __name__ == '__main__':
 @bot.event
 async def on_ready():
     print(f'\n\nLogged in as: {bot.user.name} - {bot.user.id}\nVersion: {discord.__version__}\n')
-
-    # Changes our bots Playing Status. type=1(streaming) for a standard game you could remove type and url.
     print(f'Successfully logged in and booted...!')
 
 
