@@ -1,21 +1,102 @@
+import json
 import urllib.request
 
+import discord
 from discord.ext import commands
 from discord import File
 
 from PIL import Image, ImageDraw, ImageFont
 import io
 
-# read background image only once
+
+class Profile(commands.Cog):
+    def __init__(self, bot):
+        self.bot = bot
+
+    @commands.command()
+    @commands.is_owner()
+    @commands.guild_only()
+    async def build_profiles(self, ctx):
+        users = {}
+
+        for member in ctx.guild.members:
+            users[str(member.id)] = {}
+
+        # Writes to the JSON
+        with open('profiles.json', 'w') as f:
+            json.dump(users, f)
+
+        await ctx.send("Done")
+
+    @commands.Cog.listener()
+    async def on_member_join(self, member):
+        with open('profiles.json', 'r') as f:
+            users = json.load(f)
+
+        users[str(member.id)] = {}
+
+        with open('profiles.json', 'w') as f:
+            json.dump(users, f)
+
+    @commands.command()
+    async def set(self, ctx, system: str, name: str):
+
+        system = system.upper()
+        print(system)
+
+        if system == 'PS' or system == 'XB' or system == 'PC':
+            with open('profiles.json', 'r') as f:
+                users = json.load(f)
+            try:
+                users[str(ctx.author.id)][system] = name
+                print(users)
+            except KeyError:
+                users[str(ctx.author.id)] = {}
+                users[str(ctx.author.id)][system] = name
+
+            with open('profiles.json', 'w') as f:
+                json.dump(users, f)
+
+        else:
+            await ctx.send('You need to properly format your system. Options are: PS, XB, or PC')
+            return
+
+    @commands.command()
+    async def get(self, ctx,system: str, member: discord.Member = None):
+        if member is None:
+            member = ctx.author
+
+
+    @commands.command()
+    async def profile(self, ctx, member: discord.Member = None):
+        if member is None:
+            member = ctx.author
+        profile = {}
+
+        with open('profiles.json', 'r') as f:
+            users = json.load(f)
+        try:
+            for key in users[str(member.id)]:
+                profile[key] = users[str(member.id)][key]
+        except KeyError:
+            ctx.send('It appears you haven\'t set up your profile yet! Please use the `?create` command')
+            return
+
+        profile_embed = discord.Embed(title="GoldxGuns Profile", description=f"{member.name}'s profile:")
+        for key in profile:
+            profile_embed.add_field(name=str(key), value=str(profile[key]))
+
+        await ctx.send(embed=profile_embed)
+
+"""
+
+        
+        # read background image only once
 url = 'https://i.imgur.com/FizDC6y.png'
 response = urllib.request.urlopen(url)
 background_image = Image.open(response)  # it doesn't need `io.Bytes` because it `response` has method `read()`
 background_image = background_image.convert('RGBA')  # add channel ALPHA to draw transparent rectangle
 
-
-class Profile(commands.Cog):
-    def __init__(self, bot):
-        self.bot = bot
 
     @commands.command(name='canvas')
     async def canvas(self, ctx):
@@ -103,7 +184,7 @@ class Profile(commands.Cog):
         buffer_output.seek(0)
 
         # send image
-        await ctx.send(file=File(buffer_output, 'myimage.png'))
+        await ctx.send(file=File(buffer_output, 'myimage.png'))"""
 
 
 def setup(bot):

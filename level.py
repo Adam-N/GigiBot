@@ -3,13 +3,14 @@ import random
 import datetime as dt
 from math import sqrt
 import discord
-from discord.ext import commands
+from discord.ext import commands, tasks
 import json
 
 
 class LevelCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        self.remove_birthday.start()
 
     @commands.Cog.listener()
     async def on_message(self, message):
@@ -19,7 +20,7 @@ class LevelCog(commands.Cog):
                     users = json.load(f)
                 # This is checking to see if you sent a message that recieved xp in the last 30 s.
                 try:
-                    old_time = dt.datetime.strptime(users[str(message.guild.id)][str(message.author.id)]['timestamp'],
+                    old_time = dt.datetime.strptime(users[message.author.id]['timestamp'],
                                                     "%Y-%m-%d %H:%M:%S")
                     current_time = dt.datetime.utcnow() - dt.timedelta(seconds=30)
                     current_time_string = dt.datetime.strftime(current_time, "%Y-%m-%d %H:%M:%S")
@@ -37,11 +38,13 @@ class LevelCog(commands.Cog):
                 users[str(message.author.id)]['timestamp'] = str(
                     dt.datetime.strftime(dt.datetime.utcnow(), "%Y-%m-%d %H:%M:%S"))
 
+                # Opens JSON
                 with open('level.json', 'w') as f:
                     json.dump(users, f)
             elif not os.path.isfile('level.json'):
                 return
 
+    # This creates the user in the dict Users.
     async def update_data(self, users, user):
         if not str(user.id) in users:
             users[str(user.id)] = {}
@@ -57,10 +60,12 @@ class LevelCog(commands.Cog):
             users[str(user.id)]['timestamp'] = str(dt.datetime.strftime(
                 dt.datetime.utcnow(), "%Y-%m-%d %H:%M:%S"))
 
+    # Adds the experience for the user.
     async def add_experience(self, users, user, exp):
         users[str(user.id)]['experience'] = int(
             users[str(user.id)]['experience'] + (exp + (users[str(user.id)]['level'] * 4)))
 
+    # Checks to see if a user levels up.
     async def level_up(self, users, user, channel):
         experience = users[str(user.id)]['experience']
         lvl_start = users[str(user.id)]['level']
@@ -74,27 +79,39 @@ class LevelCog(commands.Cog):
 
         top_5_role = discord.utils.get(user.guild.roles, name="Top 5")
 
+        # This is taking all of the users experience into a single dict.
         for key in users:
             top_5_dict[key] = users[str(user.id)]["experience"]
 
+        # This sorts the dict by the values from highest to lowest.
         top_5_dict_sorted = {k: top_5_dict[k] for k in sorted(top_5_dict, key=top_5_dict.get, reverse=True)}
 
-        i = 0
-        while len(top_5) < 5:
-            if int(list(top_5_dict_sorted.keys())[i]) in exclusion_list:
+        # This is checking to see if people who are listed in the top 5 are part of the exclusion list.
+        # The exclusion list includes staff, and people who have monthly award roles.
+        if len(top_5_dict_sorted) >= 5:
+            i = 0
+            while len(top_5) < 5:
+                if int(list(top_5_dict_sorted.keys())[i]) in exclusion_list:
+                    i += 1
+                    continue
+                top_5.append(list(top_5_dict_sorted.keys())[i])
                 i += 1
-                continue
-            top_5.append(list(top_5_dict_sorted.keys())[i])
-            i += 1
 
-        current_top_5 = list(top_5_role.members)
-        for member in current_top_5:
-            if str(member.id) not in top_5:
-                await member.remove_roles(top_5_role)
+        # This checks
+        if top_5_role.members:
+            current_top_5 = list(top_5_role.members)
+            member_id = []
+            for member in current_top_5:
+                member_id.append(member.id)
 
-        for member in top_5:
-            user = channel.guild.get_member(user_id=int(member))
-            await user.add_roles(top_5_role)
+                if set(member_id) != set(list(top_5_dict_sorted)):
+                    for member in current_top_5:
+                        if member.id not in top_5:
+                            await member.remove_roles(top_5_role)
+
+                for member in top_5:
+                    user = channel.guild.get_member(user_id=int(member))
+                    await user.add_roles(top_5_role)
 
         if lvl_end > (int(lvl_start) + 1):
             # await channel.send(f'{user.mention} has leveled up to Level {int(lvl_end)}')
@@ -160,12 +177,15 @@ class LevelCog(commands.Cog):
         except:
             await ctx.channel.send('Something went wrong, the file was not created')
 
+    @commands.is_owner()
     @commands.command()
     async def add_xp(self, ctx, number: int):
 
         if os.path.isfile('level.json'):
             with open('level.json', 'r') as f:
                 users = json.load(f)
+
+            # Adds experience
             users[str(ctx.author.id)]['experience'] = users[str(ctx.author.id)]['experience'] + number
             await self.level_up(users, ctx.author, ctx.channel)
 
@@ -180,6 +200,9 @@ class LevelCog(commands.Cog):
     async def thank(self, ctx, thankee: discord.Member):
         if thankee.bot:
             return
+
+        # This is the shame section.
+        # It checks if the author is thanking themselves.
         if ctx.author.id == thankee.id:
             thank_yourself_embed = discord.Embed(title="\U0001f441  \U0001f441  You tried to thank yourself, shame on "
                                                        "you")
@@ -191,9 +214,12 @@ class LevelCog(commands.Cog):
             thank_yourself_embed.set_image(url=random.choice(shame_gifs))
             await ctx.send(embed=thank_yourself_embed)
             return
+
         if os.path.isfile('level.json'):
             with open('level.json', 'r') as f:
                 users = json.load(f)
+
+            # This is a section that initializes the user if they don't exist in the database.
             try:
                 if not users[str(thankee.id)]:
                     users[str(thankee.id)] = {}
@@ -207,6 +233,9 @@ class LevelCog(commands.Cog):
                 users[str(thankee.id)]['level'] = 1
                 users[str(thankee.id)]['timestamp'] = str(dt.datetime.strftime(
                     dt.datetime.utcnow(), "%Y-%m-%d %H:%M:%S"))
+
+            # This checks to see if the user is able to thank.
+            # Gives a 24 hour time limit on thanks.
             try:
                 old_time = dt.datetime.strptime(
                     users[str(ctx.message.author.id)]['thankstamp'],
@@ -215,6 +244,7 @@ class LevelCog(commands.Cog):
                 current_time_string = dt.datetime.strftime(current_time, "%Y-%m-%d %H:%M:%S")
                 current_time_format = dt.datetime.strptime(str(current_time_string), "%Y-%m-%d %H:%M:%S")
                 time_again = old_time + dt.timedelta(seconds=86400)
+
                 if old_time <= current_time_format:
                     day_delay_embed = discord.Embed(title="\U0001f550 You have to wait more than 24 hours to thank "
                                                           "someone again \U0001f550")
@@ -226,6 +256,8 @@ class LevelCog(commands.Cog):
 
             except KeyError:
                 pass
+
+            # Gives the person thanked XP based on their level.
             if users[str(thankee.id)]['level'] <= 10:
                 experience = 50 + users[str(thankee.id)]['level'] ** 2
             elif users[str(thankee.id)]['level'] > 10:
@@ -233,19 +265,24 @@ class LevelCog(commands.Cog):
             else:
                 experience = 50
 
+            # Puts the experience into the Dict.
             users[str(thankee.id)]['experience'] += experience
-            await self.update_data(users, thankee)
-            await self.level_up(users, thankee, ctx.channel)
 
+            # Updates data and checks for leveling up.
+            await self.update_data(users, thankee)
             await self.update_data(users, ctx.message.author)
+
+            # Adds timestamp to be chacked against
             users[str(ctx.author.id)]['thankstamp'] = str(
                 dt.datetime.strftime(dt.datetime.utcnow(), "%Y-%m-%d %H:%M:%S"))
 
+            # Increases various variables, or initializes them if they don't exist.
             try:
                 if users[str(thankee.id)]['numberofthanks']:
                     users[str(thankee.id)]['numberofthanks'] += 1
             except KeyError:
                 users[str(thankee.id)]['numberofthanks'] = 1
+
             try:
                 if users[str(thankee.id)]['alltimethanks']:
                     users[str(thankee.id)]['alltimethanks'] += 1
@@ -256,15 +293,20 @@ class LevelCog(commands.Cog):
                 if users[str(ctx.author.id)]['thanker']:
                     users[str(ctx.author.id)]['thanker'] += 1
             except KeyError:
-                users[str(ctx.author.id)]['thanker'] += 1
+                users[str(ctx.author.id)]['thanker'] = 1
             try:
                 if users[str(ctx.author.id)]['thankeralltime']:
                     users[str(ctx.author.id)]['thankeralltime'] += 1
             except KeyError:
                 users[str(ctx.author.id)]['thankeralltime'] = 1
 
-            with open('level.json', 'w+') as f:
+            # Sends information to check if the person thanked levels up
+            await self.level_up(users, thankee, ctx.channel)
+
+            # Writes it back to the JSON file and sends an Embed.
+            with open('level.json', 'w') as f:
                 json.dump(users, f)
+
             thank_embed = discord.Embed(
                 title=f'\U0001f49d {ctx.author.name} has '
                 f'thanked {thankee.name} \U0001f49d', colour=discord.Colour.gold())
@@ -274,20 +316,25 @@ class LevelCog(commands.Cog):
     async def top_thanks(self, ctx):
         if not os.path.isfile('level.json'):
             return
+
         if os.path.isfile('level.json'):
             with open('level.json', 'r') as f:
                 users = json.load(f)
 
         thank_dict = {}
         user = []
+        # Adds user ids to a list.
         for key in users:
             user.append(key)
+
+        # Uses the list to generate a dict
         for key in user:
             try:
                 thank_dict[key] = users[key]['numberofthanks']
             except KeyError:
                 continue
 
+        # Sorts the dict by value from highest to lowest.
         thank_dict_sorted = {k: thank_dict[k] for k in sorted(thank_dict, key=thank_dict.get, reverse=True)}
 
         i = 1
@@ -372,19 +419,29 @@ class LevelCog(commands.Cog):
     @commands.command()
     @commands.is_owner()
     async def reset(self, ctx):
+        # This is for the monthly reset of the data. It also gives all of the reward roles out
+        # It also removes all of the roles from the top 5 as well.
+
         async with ctx.message.channel.typing():
+
             with open('level.json', 'r') as f:
                 users = json.load(f)
+
+            # Initializes various lists and dicts.
             exp_dict = {}
             thanks_dict = {}
             thanked_dict = {}
             exclusion_list = await self.exlusion_list_generator(ctx.message.author)
 
+            # Initializes the various role variables.
             top_exp_role = discord.utils.get(ctx.message.guild.roles, name="Most Wanted")
             top_thanked_role = discord.utils.get(ctx.message.guild.roles, name="Most Helpful")
             top_thanks_role = discord.utils.get(ctx.message.guild.roles, name="Most Thankful")
             top_5_role = discord.utils.get(ctx.message.guild.roles, name="Top 5")
 
+            # Iterates over the dictionary from the JSON file.
+            # each section is caught in a try except block just in case they don't have
+            # any of the information in their profile.
             for key in users:
                 try:
                     exp_dict[key] = int(users[key]['experience'])
@@ -399,33 +456,37 @@ class LevelCog(commands.Cog):
                 except KeyError:
                     pass
 
+                # Sorts the dicts from the highest value to the lowest value.
                 exp_dict_sorted = {k: exp_dict[k] for k in sorted(exp_dict, key=exp_dict.get, reverse=True)}
-                thanked_dict_sorted = {k: thanked_dict[k] for k in sorted(thanked_dict, key=thanked_dict.get, reverse=True)}
+                thanked_dict_sorted = {k: thanked_dict[k] for k in
+                                       sorted(thanked_dict, key=thanked_dict.get, reverse=True)}
                 thanks_dict_sorted = {k: thanks_dict[k] for k in sorted(thanks_dict, key=thanks_dict.get, reverse=True)}
 
-            i = 1
+            # This sections checks each sorted dict, and compares it against the exclusion list.
+            # When the person with the highest score in each group that isn't on the list is found
+            # it is stored in the corresponding variable.
+            i = 0
             top_exp = list(exp_dict_sorted.keys())[0]
             if int(top_exp) in exclusion_list:
                 while int(top_exp) in exclusion_list:
                     top_exp = list(exp_dict_sorted.keys())[i]
                     i += 1
 
-            t = 1
+            t = 0
             top_thanked = list(thanked_dict_sorted)[0]
-            print(top_thanked)
             if int(top_thanked) in exclusion_list:
                 while int(top_thanked) in exclusion_list:
                     top_thanked = list(thanked_dict_sorted.keys())[t]
                     t += 1
 
-            j = 1
+            j = 0
             top_thanks = list(thanks_dict_sorted)[0]
             if int(top_thanks) in exclusion_list:
                 while int(top_thanks) in exclusion_list:
-                    print(j)
-                    top_thanked = list(thanked_dict_sorted.keys())[j]
+                    top_thanks = list(thanked_dict_sorted.keys())[j]
                     j += 1
 
+            # Removes reward roles from previous months winners.
             for member in top_exp_role.members:
                 await member.remove_roles(top_exp_role)
             for member in top_thanked_role.members:
@@ -433,27 +494,33 @@ class LevelCog(commands.Cog):
             for member in top_thanks_role.members:
                 await member.remove_roles(top_thanks_role)
 
+            # Adds the reward roles to the people with the highest score in each section.
             await ctx.message.guild.get_member(user_id=int(top_exp)).add_roles(top_exp_role)
             await ctx.message.guild.get_member(user_id=int(top_thanked)).add_roles(top_thanked_role)
             await ctx.message.guild.get_member(user_id=int(top_thanks)).add_roles(top_thanks_role)
 
+            # Removes top 5 role
             for member in top_5_role.members:
                 await member.remove_roles(top_5_role)
 
+            # Resets all the information for all the users.
             for key in users:
                 users[key]['experience'] = 0
                 users[key]['level'] = 1
                 users[key]['numberofthanks'] = 0
                 users[key]['thanker'] = 0
 
+            # Writes to the JSON
             with open('level.json', 'w+') as f:
                 json.dump(users, f)
 
-            await ctx.send("Reset is Complete")
+            await ctx.send("Reset is Complete.")
 
     @commands.command()
     @commands.is_owner()
     async def generate(self, ctx):
+        # This is for testing purposes only!
+        # This generates random data for everyone on the server.
         x = ctx.message.guild.members
         users = {}
 
@@ -475,7 +542,79 @@ class LevelCog(commands.Cog):
                         json.dump(users, f)
             await ctx.channel.send('File Created')
 
+    @commands.command()
+    async def daily(self, ctx):
+        with open('level.json', 'r') as f:
+            users = json.load(f)
+        try:
+            old_time = dt.datetime.strptime(
+                users[str(ctx.message.author.id)]['daystamp'],
+                "%Y-%m-%d %H:%M:%S")
+            current_time = dt.datetime.utcnow() + dt.timedelta(seconds=86400)
+            current_time_string = dt.datetime.strftime(current_time, "%Y-%m-%d %H:%M:%S")
+            current_time_format = dt.datetime.strptime(str(current_time_string), "%Y-%m-%d %H:%M:%S")
+            time_again = old_time + dt.timedelta(seconds=86400)
+
+            if dt.datetime.strptime(
+                    users[str(ctx.message.author.id)]['daystamp'],
+                    "%Y-%m-%d %H:%M:%S") <= dt.datetime.strptime(
+                users[str(ctx.message.author.id)]['daystamp'],
+                "%Y-%m-%d %H:%M:%S") + dt.timedelta(seconds=86400):
+                day_delay_embed = discord.Embed(title="\U0001f550 You have to wait more than 24 hours to use your "
+                                                      "daily again \U0001f550")
+                day_delay_embed.set_footer(text='Time until you can use your daily bonus again ')
+                day_delay_embed.timestamp = time_again
+
+                await ctx.send(embed=day_delay_embed)
+                return
+
+        except KeyError:
+            pass
+
+        try:
+            if users[str(ctx.author.id)]["daycount"]:
+                users[str(ctx.author.id)]["daycount"] += 1
+            if dt.datetime.strptime(users[str(ctx.author.id)]["daystamp"], "%Y-%m-%d %H:%M:%S") > (dt.datetime.strptime(
+                    users[str(ctx.message.author.id)]['daystamp'],
+                    "%Y-%m-%d %H:%M:%S") + dt.timedelta(hours=12)):
+                users[str(ctx.author.id)]["daycount"] = 1
+
+        except KeyError:
+            users[str(ctx.author.id)]["daycount"] = 1
+
+        users[str(ctx.author.id)]["experience"] += ((60 * users[str(ctx.author.id)]['daycount']) / 2)
+        if users[str(ctx.author.id)]["daycount"] == 5:
+            users[str(ctx.author.id)]["daycount"] = 1
+            users[str(ctx.author.id)]["experience"] += 75
+            day_embed = discord.Embed(title="You claimed your daily XP bonus!", description="\U00002728 Today is your "
+                                                                                            "fifth day "
+                                                                                            "in a row, you got even "
+                                                                                            "more experience! "
+                                                                                            "\U00002728")
+
+        elif 5 > users[str(ctx.author.id)]["daycount"]:
+            day_embed = discord.Embed(title="You claimed your daily XP bonus!",
+                                      description=f"You are on day {users[str(ctx.author.id)]['daycount']}. Keep it up "
+                                      f"to get to day 5!  ")
+
+        elif users[str(ctx.author.id)]["daystamp"] == dt.datetime.strptime(users[str(ctx.author.id)]['daystamp'], "%Y"
+                                                                                                                  "-%m-%d %H:%M:%S") + dt.timedelta(
+            hours=36):
+            users[str(ctx.author.id)]["daycount"] = 1
+            day_embed = discord.Embed(title="You claimed your daily XP bonus!", description="You missed the bonus "
+                                                                                            "window. Your time has "
+                                                                                            "been reset")
+        users[str(ctx.author.id)]["daystamp"] = str(
+            dt.datetime.strftime(dt.datetime.utcnow(), "%Y-%m-%d %H:%M:%S"))
+
+        await ctx.send(embed=day_embed)
+
+        with open('level.json', 'w') as f:
+            json.dump(users, f)
+
     async def exlusion_list_generator(self, user):
+
+        # List and roles initialization
         exclusion_list = []
         ringleader_role = discord.utils.get(user.guild.roles, name="Ringleaders/Officer")
         mod_role = discord.utils.get(user.guild.roles, name="Enforcers/Moderator")
@@ -483,6 +622,7 @@ class LevelCog(commands.Cog):
         top_thanked_role = discord.utils.get(user.guild.roles, name="Most Helpful")
         top_thanks_role = discord.utils.get(user.guild.roles, name="Most Thankful")
 
+        # For each group this iterates over the members in the role to add to the exclusion list.
         for ringleader in ringleader_role.members:
             exclusion_list.append(ringleader.id)
         for mod in mod_role.members:
@@ -495,6 +635,103 @@ class LevelCog(commands.Cog):
             exclusion_list.append(member.id)
 
         return exclusion_list
+
+    @commands.command()
+    async def birthday(self, ctx, member: discord.Member):
+        if os.path.isfile('level.json'):
+            with open('level.json', 'r+') as f:
+                users = json.load(f)
+
+        try:
+
+            if dt.datetime.strptime(users[str(member.id)]['bdaystamp'], "%Y-%m-%d %H:%M:%S") <= \
+                    dt.datetime.strptime(users[str(member.id)]['bdaystamp'], "%Y-%m-%d %H:%M:%S") + \
+                    dt.timedelta(days=364):
+                day_delay_embed = discord.Embed(title="\U0001f550 You have to wait until next year! \U0001f550 ")
+
+                await ctx.send(embed=day_delay_embed)
+                return
+
+        except KeyError:
+            pass
+
+        except UnboundLocalError:
+            pass
+
+        he_role = discord.utils.find(lambda r: r.name == 'He/Him', ctx.message.guild.roles)
+        she_role = discord.utils.find(lambda r: r.name == 'She/Her', ctx.message.guild.roles)
+        they_role = discord.utils.find(lambda r: r.name == 'They/Them', ctx.message.guild.roles)
+        birthday_role = discord.utils.get(ctx.guild.roles, name="Happy Birthday!")
+
+        if he_role in member.roles:
+            birthday_embed = discord.Embed(title='\U0001f389 Happy Birthday! \U0001f389',
+                                           description=f"Wish {member.display_name} a happy birthday! Let's celebrate "
+                                           f"with him!")
+
+        elif she_role in member.roles:
+            birthday_embed = discord.Embed(title='\U0001f389 Happy Birthday! \U0001f389',
+                                           description=f"Wish {member.display_name} a happy birthday! Let's celebrate "
+                                           f"with her!")
+
+        elif member in they_role.members:
+            birthday_embed = discord.Embed(title='\U0001f389 Happy Birthday! \U0001f389',
+                                           description=f"Wish {member.display_name} a happy birthday! Let's celebrate "
+                                           f"with them!' ")
+
+        else:
+            birthday_embed = discord.Embed(title='\U0001f389 Happy Birthday! \U0001f389',
+                                           description=f"Wish {member.display_name} a happy birthday! Let's celebrate "
+                                           f"with them!")
+
+        birthday_embed.add_field(name="\U0001f382",
+                                 value="Good work on makin it round the sun again without biting the dust, haha!"
+                                       "Hopefully it wasn't too boring! \n"
+                                       "Really though, thanks for being a part of our little posse. May your RNG"
+                                       "be extra nice today and the year full of happiness and prosperity. "
+                                       "Sending love from all of us here at GxG")
+        await ctx.send(embed=birthday_embed)
+        try:
+            users[str(member.id)]["bdaystamp"] = str(dt.datetime.strftime(dt.datetime.utcnow(), "%Y-%m-%d %H:%M:%S"))
+            users[str(member.id)]["experience"] += 350
+
+        except KeyError:
+            users[str(member.id)] = {}
+            users[str(member.id)]["bdaystamp"] = str(dt.datetime.strftime(dt.datetime.utcnow(), "%Y-%m-%d %H:%M:%S"))
+            users[str(member.id)]["experience"] = 350
+            users[str(member.id)]["level"] = 1
+
+        except UnboundLocalError:
+            users = {}
+            users[str(member.id)] = {}
+            users[str(member.id)]["bdaystamp"] = str(dt.datetime.strftime(dt.datetime.utcnow(), "%Y-%m-%d %H:%M:%S"))
+            users[str(member.id)]["experience"] = 350
+            users[str(member.id)]["level"] = 1
+
+        await member.add_roles(birthday_role)
+
+        with open('level.json', 'w') as f:
+            json.dump(users, f)
+
+    @tasks.loop(hours=8)
+    async def remove_birthday(self):
+        print("In")
+
+        with open('level.json', 'r') as f:
+            users = json.load(f)
+        guild = self.bot.get_guild(610510537876570153)
+
+        birthday_role = discord.utils.get(guild.roles, name="Happy Birthday!")
+        if birthday_role.members:
+            for member in birthday_role.members:
+
+                if dt.datetime.strptime(users[str(member.id)]['bdaystamp'],
+                                        "%Y-%m-%d %H:%M:%S") <= dt.datetime.strptime(users[str(member.id)]['bdaystamp'],
+                                                                                     "%Y-%m-%d %H:%M:%S") + dt.timedelta(
+                                                                                                            hours=23):
+                    print(member)
+                    await member.remove_roles(birthday_role)
+                    chan = self.bot.get_channel(742389034420142090)
+                    await chan.send(f"Removed birthday role from {member.name}")
 
 
 def setup(bot):

@@ -10,7 +10,7 @@ class WelcomeCog(commands.Cog):
 
     @commands.Cog.listener()
     async def on_member_join(self, member):
-        channel = await self.bot.fetch_channel(channel_id=334925467431862272)
+        channel = self.bot.get_channel(610510538379755521)
         ment = member.mention
         welcome_messages = [
             f"\U0001f4e2 \U0000269f Say hello to {ment}!",
@@ -44,7 +44,7 @@ class WelcomeCog(commands.Cog):
 
     @commands.Cog.listener()
     async def on_member_remove(self, member):
-        channel = await self.bot.fetch_channel(channel_id=334925467431862272)
+        channel = self.bot.get_channel(610510538379755521)
 
         leave_embed = discord.Embed(title="Member left", description=f'{member} has left')
         leave_embed.add_field(name="Nick: ", value=f"{member.nick}", inline=True)
