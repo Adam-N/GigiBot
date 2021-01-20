@@ -33,7 +33,7 @@ class LevelCog(commands.Cog):
 
                 await self.update_data(users, message.author)
                 await self.add_experience(users, message.author,
-                                          random.randint(50, 100))
+                                          random.randint(15, 35))
                 await self.level_up(users, message.author, message.channel)
                 users[str(message.author.id)]['timestamp'] = str(
                     dt.datetime.strftime(dt.datetime.utcnow(), "%Y-%m-%d %H:%M:%S"))
@@ -69,7 +69,7 @@ class LevelCog(commands.Cog):
     async def level_up(self, users, user, channel):
         experience = users[str(user.id)]['experience']
         lvl_start = users[str(user.id)]['level']
-        lvl_end = float((round((sqrt(625 + 100 * experience) - 25) / 20, 2)))
+        lvl_end = float((round((sqrt(50 + 50 * experience) - 625) / 2, 2)))
         if lvl_end < 1:
             lvl_end = 1
         users[str(user.id)]['level'] = lvl_end
@@ -120,43 +120,49 @@ class LevelCog(commands.Cog):
             # await user.add_roles(role)
 
     @commands.command(aliases=['rank', 'lvl'])
-    async def level(self, ctx):
+    async def level(self, ctx, member: discord.Member = None):
+        """This tells you what your current level and experience are. It also has other various traits it tracks"""
+        if member is None:
+            member = ctx.message.author
+        if member.bot:
+            return
         try:
-            user = ctx.message.author
             with open('level.json', 'r') as f:
                 users = json.load(f)
-            lvl = users[str(user.id)]['level']
-            exp = users[str(user.id)]['experience']
+            lvl = users[str(member.id)]['level']
+            exp = users[str(member.id)]['experience']
             embed = discord.Embed(title='Level {}'.format(int(lvl)), description=f"{exp} XP ",
-                                  color=ctx.author.top_role.colour)
-            embed.set_author(name=ctx.author, icon_url=ctx.author.avatar_url)
+                                  color=member.top_role.colour)
+            embed.set_author(name=member, icon_url=ctx.author.avatar_url)
             try:
-                thanks = users[str(user.id)]['numberofthanks']
+                thanks = users[str(member.id)]['numberofthanks']
                 embed.add_field(name="Number of thanks this month:", value=f"{thanks}")
             except KeyError:
                 pass
             try:
-                all_time_thanks = users[str(user.id)]['alltimethanks']
+                all_time_thanks = users[str(member.id)]['alltimethanks']
                 embed.add_field(name="Number of thanks all time:", value=f"{all_time_thanks}")
             except KeyError:
                 pass
             try:
-                thanker = users[str(user.id)]["thanker"]
+                thanker = users[str(member.id)]["thanker"]
                 embed.add_field(name="Number of times you thanked someone:", value=f'{thanker}')
             except KeyError:
                 pass
             try:
-                thanker_alltime = users[str(user.id)]["thankeralltime"]
+                thanker_alltime = users[str(member.id)]["thankeralltime"]
                 embed.add_field(name="Number of times you thank someone (all-time):", value=f'{thanker_alltime}')
             except KeyError:
                 pass
-            embed.set_thumbnail(url=user.avatar_url)
+            embed.set_thumbnail(url=member.avatar_url)
             await ctx.send(embed=embed)
         except:
             await ctx.send("Something seems to have gone wrong.")
 
-    @commands.command(aliases=["create", "make"])
+    @commands.command(aliases=["create", "make"], hidden=True)
+    @commands.is_owner()
     async def create_json(self, ctx):
+        """Creates the JSON file for the level system"""
         try:
             if os.path.isfile('level.json'):
                 await ctx.channel.send('File already exists.')
@@ -178,16 +184,22 @@ class LevelCog(commands.Cog):
             await ctx.channel.send('Something went wrong, the file was not created')
 
     @commands.is_owner()
-    @commands.command()
-    async def add_xp(self, ctx, number: int):
+    @commands.command(hidden=True)
+    async def add_xp(self, ctx, number: int, member: discord.Member = None):
+        """Adds XP to a member."""
+        if member.bot:
+            return
+
+        if member is None:
+            member = ctx.author
 
         if os.path.isfile('level.json'):
             with open('level.json', 'r') as f:
                 users = json.load(f)
 
             # Adds experience
-            users[str(ctx.author.id)]['experience'] = users[str(ctx.author.id)]['experience'] + number
-            await self.level_up(users, ctx.author, ctx.channel)
+            users[str(member.id)]['experience'] = users[str(member.id)]['experience'] + number
+            await self.level_up(users, member, ctx.channel)
 
             with open('level.json', 'w+') as f:
                 json.dump(users, f)
@@ -198,7 +210,12 @@ class LevelCog(commands.Cog):
 
     @commands.command(aliases=['thanks', 'thankyou'])
     async def thank(self, ctx, thankee: discord.Member):
+        """Use this to thank another member who helps you with something! Cannot thank yourself or use in bot
+        channels. """
         if thankee.bot:
+            return
+
+        if 'bot' in ctx.channel.name:
             return
 
         # This is the shame section.
@@ -314,6 +331,7 @@ class LevelCog(commands.Cog):
 
     @commands.command(aliases=['topthank', 'topthanks', 'thankleaders', 'thankleader', 'thankleaderboard'])
     async def top_thanks(self, ctx):
+        """Gives the leaderboard for number of thanks recieved!"""
         if not os.path.isfile('level.json'):
             return
 
@@ -349,12 +367,9 @@ class LevelCog(commands.Cog):
             if i > 15:
                 break
 
-        number_list_for_embed = '\n'
-        member_list_for_embed = '\n'
-        thank_list_for_embed = '\n'
-        member_list_for_embed = member_list_for_embed.join(member_list)
-        number_list_for_embed = number_list_for_embed.join(number_list)
-        thank_list_for_embed = thank_list_for_embed.join(thank_list)
+        member_list_for_embed = "\n".join(member_list)
+        number_list_for_embed = "\n".join(number_list)
+        thank_list_for_embed = "\n".join(thank_list)
 
         thank_embed = discord.Embed(title="Thank Leaderboard")
         thank_embed.add_field(name="Position", value=f"{number_list_for_embed}", inline=True)
@@ -364,6 +379,7 @@ class LevelCog(commands.Cog):
 
     @commands.command(aliases=['toplevel', 'leaderboard', 'expleader', 'top'])
     async def top_level(self, ctx):
+        """Gives the leaderboard for people with the highest level in the server."""
         if not os.path.isfile('level.json'):
             return
         if os.path.isfile('level.json'):
@@ -416,7 +432,7 @@ class LevelCog(commands.Cog):
         thank_embed.add_field(name="Amount of Experience:", value=f"{exp_list_for_embed}", inline=True)
         await ctx.channel.send(embed=thank_embed)
 
-    @commands.command()
+    @commands.command(hidden=True)
     @commands.is_owner()
     async def reset(self, ctx):
         # This is for the monthly reset of the data. It also gives all of the reward roles out
@@ -516,7 +532,7 @@ class LevelCog(commands.Cog):
 
             await ctx.send("Reset is Complete.")
 
-    @commands.command()
+    @commands.command(hidden=True)
     @commands.is_owner()
     async def generate(self, ctx):
         # This is for testing purposes only!
@@ -527,7 +543,7 @@ class LevelCog(commands.Cog):
         if not os.path.isfile('level.json'):
             for member in x:
                 if not member.bot:
-                    exp = random.randint(150, 2000)
+                    exp = random.randint(50, 100)
                     users[str(member.id)] = {}
                     users[str(member.id)]['experience'] = exp
                     users[str(member.id)]['level'] = (sqrt(625 + 100 * exp) - 25) / 20
@@ -543,27 +559,23 @@ class LevelCog(commands.Cog):
             await ctx.channel.send('File Created')
 
     @commands.command()
-    async def daily(self, ctx):
+    async def daily(self, ctx, member: discord.Member = None):
+        if member is None:
+            member = ctx.author
+
         with open('level.json', 'r') as f:
             users = json.load(f)
-        try:
-            old_time = dt.datetime.strptime(
-                users[str(ctx.message.author.id)]['daystamp'],
-                "%Y-%m-%d %H:%M:%S")
-            current_time = dt.datetime.utcnow() + dt.timedelta(seconds=86400)
-            current_time_string = dt.datetime.strftime(current_time, "%Y-%m-%d %H:%M:%S")
-            current_time_format = dt.datetime.strptime(str(current_time_string), "%Y-%m-%d %H:%M:%S")
-            time_again = old_time + dt.timedelta(seconds=86400)
 
-            if dt.datetime.strptime(
-                    users[str(ctx.message.author.id)]['daystamp'],
-                    "%Y-%m-%d %H:%M:%S") <= dt.datetime.strptime(
-                users[str(ctx.message.author.id)]['daystamp'],
-                "%Y-%m-%d %H:%M:%S") + dt.timedelta(seconds=86400):
+        # checks the current time against the day stamp to see if it has been 24 hours or not.
+        try:
+            if dt.datetime.utcnow() <= dt.datetime.strptime(
+                    users[str(ctx.author.id)]['daystamp'],
+                    "%Y-%m-%d %H:%M:%S") + dt.timedelta(hours=24):
                 day_delay_embed = discord.Embed(title="\U0001f550 You have to wait more than 24 hours to use your "
                                                       "daily again \U0001f550")
                 day_delay_embed.set_footer(text='Time until you can use your daily bonus again ')
-                day_delay_embed.timestamp = time_again
+                day_delay_embed.timestamp = dt.datetime.strptime(users[str(ctx.author.id)]['daystamp'],
+                                                                 "%Y-%m-%d %H:%M:%S") + dt.timedelta(hours=24)
 
                 await ctx.send(embed=day_delay_embed)
                 return
@@ -571,42 +583,57 @@ class LevelCog(commands.Cog):
         except KeyError:
             pass
 
+        # Gives a bonus if the daily is being given to someone else.
+        bonus = 1
+        if member.id != ctx.author.id:
+            bonus = random.randint(2, 4)
+
+        # gives experience to the member or updates their data and then gives experience.
         try:
-            if users[str(ctx.author.id)]["daycount"]:
-                users[str(ctx.author.id)]["daycount"] += 1
-            if dt.datetime.strptime(users[str(ctx.author.id)]["daystamp"], "%Y-%m-%d %H:%M:%S") > (dt.datetime.strptime(
-                    users[str(ctx.message.author.id)]['daystamp'],
-                    "%Y-%m-%d %H:%M:%S") + dt.timedelta(hours=12)):
-                users[str(ctx.author.id)]["daycount"] = 1
-
+            users[str(member.id)]["experience"] += ((60 * users[str(ctx.author.id)]['daycount']) / 2) * bonus
         except KeyError:
-            users[str(ctx.author.id)]["daycount"] = 1
+            await self.update_data(users, member)
+            users[str(member.id)]["experience"] = ((60 * users[str(ctx.author.id)]['daycount']) / 2) * bonus
 
-        users[str(ctx.author.id)]["experience"] += ((60 * users[str(ctx.author.id)]['daycount']) / 2)
-        if users[str(ctx.author.id)]["daycount"] == 5:
+        # tries to add one to the daycount, if it doesn't exist it will create the value.
+        try:
+            users[str(ctx.author.id)]['daycount'] += 1
+        except KeyError:
+            users[str(ctx.author.id)]['daycount'] = 1
+
+        # If you have been over 36 hours doing your daily it resets your streak.
+        if dt.datetime.utcnow() > dt.datetime.strptime(users[str(ctx.author.id)]['daystamp'], "%Y-%m-%d %H:%M:%S") + \
+                dt.timedelta(hours=36):
             users[str(ctx.author.id)]["daycount"] = 1
-            users[str(ctx.author.id)]["experience"] += 75
+            day_embed = discord.Embed(title="You claimed your daily XP bonus!", description="You missed the bonus "
+                                                                                            "window. Your streak has "
+                                                                                            "been reset to 1")
+        # if you are at a streak of 5 you get a bonus.
+        elif users[str(ctx.author.id)]["daycount"] == 5:
+            users[str(ctx.author.id)]["daycount"] = 1
+            users[str(member.id)]["experience"] += 75
             day_embed = discord.Embed(title="You claimed your daily XP bonus!", description="\U00002728 Today is your "
                                                                                             "fifth day "
                                                                                             "in a row, you got even "
-                                                                                            "more experience! "
-                                                                                            "\U00002728")
+                                                                                            "more experience! ")
 
+        # For streaks between 1 and 5.
         elif 5 > users[str(ctx.author.id)]["daycount"]:
+            print(users[str(ctx.author.id)]['daycount'])
             day_embed = discord.Embed(title="You claimed your daily XP bonus!",
                                       description=f"You are on day {users[str(ctx.author.id)]['daycount']}. Keep it up "
                                       f"to get to day 5!  ")
+            print(users[str(ctx.author.id)]['daycount'])
 
-        elif users[str(ctx.author.id)]["daystamp"] == dt.datetime.strptime(users[str(ctx.author.id)]['daystamp'], "%Y"
-                                                                                                                  "-%m-%d %H:%M:%S") + dt.timedelta(
-            hours=36):
-            users[str(ctx.author.id)]["daycount"] = 1
-            day_embed = discord.Embed(title="You claimed your daily XP bonus!", description="You missed the bonus "
-                                                                                            "window. Your time has "
-                                                                                            "been reset")
+        # creates the time stamp.
         users[str(ctx.author.id)]["daystamp"] = str(
             dt.datetime.strftime(dt.datetime.utcnow(), "%Y-%m-%d %H:%M:%S"))
 
+        # Adds a field to the embed for the friend bonus.
+        if member.id != ctx.author.id:
+            day_embed.add_field(name='Friend Bonus!', value=f"You gave your friend {bonus} times the amount of xp!")
+        day_embed.set_thumbnail(url='https://cdn.discordapp.com/attachments/532380077896237061/800924153053970476'
+                                    '/terry_coin.png')
         await ctx.send(embed=day_embed)
 
         with open('level.json', 'w') as f:
@@ -638,14 +665,12 @@ class LevelCog(commands.Cog):
 
     @commands.command()
     async def birthday(self, ctx, member: discord.Member):
-        if os.path.isfile('level.json'):
-            with open('level.json', 'r+') as f:
-                users = json.load(f)
-
+        with open('level.json', 'r+') as f:
+            users = json.load(f)
+        # Time check to see if it has been a year since the command has been used for a user.
         try:
 
-            if dt.datetime.strptime(users[str(member.id)]['bdaystamp'], "%Y-%m-%d %H:%M:%S") <= \
-                    dt.datetime.strptime(users[str(member.id)]['bdaystamp'], "%Y-%m-%d %H:%M:%S") + \
+            if dt.datetime.utcnow() <= dt.datetime.strptime(users[str(member.id)]['bdaystamp'], "%Y-%m-%d %H:%M:%S") + \
                     dt.timedelta(days=364):
                 day_delay_embed = discord.Embed(title="\U0001f550 You have to wait until next year! \U0001f550 ")
 
@@ -657,12 +682,14 @@ class LevelCog(commands.Cog):
 
         except UnboundLocalError:
             pass
-
-        he_role = discord.utils.find(lambda r: r.name == 'He/Him', ctx.message.guild.roles)
-        she_role = discord.utils.find(lambda r: r.name == 'She/Her', ctx.message.guild.roles)
-        they_role = discord.utils.find(lambda r: r.name == 'They/Them', ctx.message.guild.roles)
+        # Gets t
+        he_role = discord.utils.get(ctx.message.guild.roles, name='He/Him')
+        she_role = discord.utils.get(ctx.message.guild.roles, name='She/Her')
+        they_role = discord.utils.get(ctx.message.guild.roles, name='They/Them')
         birthday_role = discord.utils.get(ctx.guild.roles, name="Happy Birthday!")
 
+
+        # checks if the member has one or another of the gender roles.
         if he_role in member.roles:
             birthday_embed = discord.Embed(title='\U0001f389 Happy Birthday! \U0001f389',
                                            description=f"Wish {member.display_name} a happy birthday! Let's celebrate "
@@ -690,6 +717,8 @@ class LevelCog(commands.Cog):
                                        "be extra nice today and the year full of happiness and prosperity. "
                                        "Sending love from all of us here at GxG")
         await ctx.send(embed=birthday_embed)
+
+        # Giving bonus experience and adding the timestamp.
         try:
             users[str(member.id)]["bdaystamp"] = str(dt.datetime.strftime(dt.datetime.utcnow(), "%Y-%m-%d %H:%M:%S"))
             users[str(member.id)]["experience"] += 350
@@ -714,21 +743,18 @@ class LevelCog(commands.Cog):
 
     @tasks.loop(hours=8)
     async def remove_birthday(self):
-        print("In")
-
         with open('level.json', 'r') as f:
             users = json.load(f)
+        # Checks every 8 hours to see if a birthday role has bee
         guild = self.bot.get_guild(610510537876570153)
 
         birthday_role = discord.utils.get(guild.roles, name="Happy Birthday!")
         if birthday_role.members:
             for member in birthday_role.members:
 
-                if dt.datetime.strptime(users[str(member.id)]['bdaystamp'],
-                                        "%Y-%m-%d %H:%M:%S") <= dt.datetime.strptime(users[str(member.id)]['bdaystamp'],
+                if dt.datetime.utcnow() >= dt.datetime.strptime(users[str(member.id)]['bdaystamp'],
                                                                                      "%Y-%m-%d %H:%M:%S") + dt.timedelta(
-                                                                                                            hours=23):
-                    print(member)
+                                                                                        hours=23):
                     await member.remove_roles(birthday_role)
                     chan = self.bot.get_channel(742389034420142090)
                     await chan.send(f"Removed birthday role from {member.name}")

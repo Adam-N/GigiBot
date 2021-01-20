@@ -18,7 +18,13 @@ class TriumphantCog(commands.Cog):
             message = await channel.fetch_message(payload.message_id)
             emoji = payload.emoji
             copy_embed = ""
+            not_bot_user = None
             msg = await message.guild.get_channel(channel_id=payload.channel_id).fetch_message(payload.message_id)
+            id_list = []
+            name_list = []
+
+            with open('profiles.json', 'r') as f:
+                profiles = json.load(f)
 
             if emoji.name == '🏆':
                 await message.add_reaction(emoji)
@@ -34,6 +40,14 @@ class TriumphantCog(commands.Cog):
                             break
                         else:
                             continue
+
+                    for i in profiles.keys():
+                        for j in profiles[i].keys():
+                            if profiles[i][j] in message.embeds[0].description:
+                                not_bot_user = int(i)
+                            else:
+                                continue
+
                     # if so, copy it into a dict so we can work with it
                     copy_embed = message.embeds[0].to_dict()
 
@@ -65,22 +79,38 @@ class TriumphantCog(commands.Cog):
                 else:
                     # if not, we'll just use the message's content
                     content = message.content
+                    if message.mentions:
+                        for member in guild.members:
+                            if member in message.mentions:
+                                id_list.append(str(member.id))
+                                name_list.append(str(member.name))
+
 
                 # create the embed to send to the starboard
                 embed = discord.Embed(title=f"{message.author} said...",
                                       description=f'{content}\n\n[Jump to Message](https://discordapp.com/channels/{payload.guild_id}/{payload.channel_id}/{payload.message_id})',
                                       colour=0x784fd7,
                                       timestamp=message.created_at)
+
+                if id_list:
+                    name_string = "\n".join(name_list)
+                    id_string = "\n".join(id_list)
+                    print(f"1 {id_string}")
+                    print(f"2 {name_string}")
+                    embed.add_field(name="People mentioned in the message:", value=name_string)
+                    embed.add_field(name="IDs:", value=id_string)
+
                 if not msg.author.bot:
                     embed.set_footer(text=f"ID:{msg.author.id}")
                     embed.set_thumbnail(url=msg.author.avatar_url)
                     embed.add_field(name="Nominated User:", value=f"{msg.author.name}")
 
                 if msg.author.bot:
-                    embed.set_footer(text=f"ID:{not_bot_user}")
-                    avatar_member = self.bot.get_user(not_bot_user)
-                    embed.set_thumbnail(url=avatar_member.avatar_url)
-                    embed.add_field(name="Nominated User:", value=f"{avatar_member.name}")
+                    if not_bot_user:
+                        embed.set_footer(text=f"ID:{not_bot_user}")
+                        avatar_member = self.bot.get_user(not_bot_user)
+                        embed.set_thumbnail(url=avatar_member.avatar_url)
+                        embed.add_field(name="Nominated User:", value=f"{avatar_member.name}")
 
                 # add the author's avatar as the thumbnail
 
@@ -103,8 +133,12 @@ class TriumphantCog(commands.Cog):
                 if not msg.author.bot:
                     users[str(msg.author.id)] = 1
 
-                if msg.author.bot:
+                if msg.author.bot and not_bot_user:
                     users[str(not_bot_user)] = 1
+
+                if message.mentions:
+                    for member in id_list:
+                        users[str(member)] = 1
 
                 with open('triumphant.json', 'w') as f:
                     json.dump(users, f)
@@ -205,7 +239,7 @@ class TriumphantCog(commands.Cog):
             while member.bot:
                 member = random.choice(ctx.guild.members)
         embed = discord.Embed(title="title",
-                              description=f'rnamdnoidfdsafoida{member.name}jfasd ldsfjlkdsajdfsjkljlksafjkfdsjkl')
+                              description=f'rough')
         await ctx.send(embed=embed)
 
     @commands.command()
@@ -218,7 +252,6 @@ class TriumphantCog(commands.Cog):
         chan = self.bot.get_channel(742389034420142090)
         await chan.send("\U0001f5d3 Timer Started \U0001f5d3")
 
-        print(1)
         if os.path.isfile('triumphant_copy.json'):
             os.remove('triumphant_copy.json')
         with open('triumphant.json', 'r') as f:

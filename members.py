@@ -8,14 +8,11 @@ class MembersCog(commands.Cog, name='members'):
 
     @commands.command()
     @commands.guild_only()
-    async def joined(self, ctx, *, member: discord.Member):
+    async def joined(self, ctx, *, member: discord.Member = None):
         """Says when a member joined."""
+        if member is None:
+            member = ctx.author
         await ctx.send(f'{member.display_name} joined on {member.joined_at}')
-
-    @commands.command(name='cool')
-    async def cool_bot(self, ctx):
-        """Is the bot cool?"""
-        await ctx.send('This bot is cool. :)')
 
     @commands.command(name='top_role', aliases=['toprole'])
     @commands.guild_only()
