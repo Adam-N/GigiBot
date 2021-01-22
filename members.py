@@ -1,5 +1,6 @@
 import discord
 from discord.ext import commands
+import datetime as dt
 
 
 class MembersCog(commands.Cog, name='members'):
@@ -42,7 +43,30 @@ class MembersCog(commands.Cog, name='members'):
 
         await ctx.send(content=None, embed=embed)
 
+    @commands.command(hidden=True)
+    async def check(self, ctx, member: discord.Member = None):
+        if member is None:
+            member = ctx.author
 
+        embed = discord.Embed(title=f"{member.name}'s Profile", value="Check this out")
+
+        embed.add_field(name="Joined at", value=f"{dt.datetime.strftime(member.joined_at, '%d %B, %Y  %H:%M')}")
+        embed.add_field(name="Created at", value=f"{dt.datetime.strftime(member.created_at, '%d %B, %Y  %H:%M')}")
+        embed.add_field(name="Username", value=f"{member.name}{member.discriminator}")
+        embed.add_field(name="Top role:", value=f"{member.top_role}")
+        embed.set_thumbnail(url=member.avatar_url)
+
+        await ctx.send(embed=embed)
+
+    @commands.command(hidden=True)
+    async def role_number(self, ctx, *role_name: str):
+        i = 0
+        role_name_joined = " ".join(role_name)
+        role = discord.utils.get(ctx.message.guild.roles, name=role_name_joined)
+        for member in role.members:
+            i += 1
+        embed = discord.Embed(title=f"{i} people in {role}", value=".")
+        await ctx.send(embed=embed)
 
 def setup(bot):
     bot.add_cog(MembersCog(bot))

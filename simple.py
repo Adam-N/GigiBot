@@ -1,5 +1,6 @@
 import discord
 from discord.ext import commands
+import random
 
 
 class SimpleCog(commands.Cog, name='simple'):
@@ -7,6 +8,20 @@ class SimpleCog(commands.Cog, name='simple'):
 
     def __init__(self, bot):
         self.bot = bot
+
+    @commands.command()
+    async def numgen(self, ctx, number: int):
+        if number > 25:
+            await ctx.send("Too big...")
+            return
+        i = 0
+        list = []
+        while i < number:
+            list.append(random.randint(0, 9))
+            i += 1
+
+        numlist = "".join(str(list)).strip("[]")
+        await ctx.send(numlist)
 
     @commands.command(name='repeat', aliases=['copy', 'mimic'])
     async def do_repeat(self, ctx, *, our_input: str):
@@ -22,46 +37,6 @@ class SimpleCog(commands.Cog, name='simple'):
 
         total = first + second
         await ctx.send(f'The sum of **{first}** and **{second}**  is  **{total}**')
-
-    @commands.command(name='me')
-    @commands.is_owner()
-    async def only_me(self, ctx):
-        """A simple command which only responds to the owner of the bot."""
-
-        await ctx.send(f'Hello {ctx.author.mention}. This command can only be used by you!!')
-
-    @commands.command(name='embeds')
-    @commands.guild_only()
-    async def example_embed(self, ctx):
-        """A simple command which showcases the use of embeds.
-        Have a play around and visit the Visualizer."""
-
-        embed = discord.Embed(title='Example Embed',
-                              description='Showcasing the use of Embeds...\nSee the visualizer for more info.',
-                              colour=0x98FB98)
-        embed.set_author(name='MysterialPy',
-                         url='https://gist.github.com/MysterialPy/public',
-                         icon_url='http://i.imgur.com/ko5A30P.png')
-        embed.set_image(url='https://cdn.discordapp.com/attachments/84319995256905728/252292324967710721/embed.png')
-
-        embed.add_field(name='Embed Visualizer', value='[Click Here!](https://leovoel.github.io/embed-visualizer/)')
-        embed.add_field(name='Command Invoker', value=ctx.author.mention)
-        embed.set_footer(text='Made in Python with discord.py@rewrite', icon_url='http://i.imgur.com/5BFecvA.png')
-
-        await ctx.send(content='**A simple Embed for discord.py@rewrite in cogs.**', embed=embed)
-
-    @commands.Cog.listener()
-    async def on_member_ban(self, guild, user):
-        """Event Listener which is called when a user is banned from the guild.
-        For this example I will keep things simple and just print some info.
-        Notice how because we are in a cog class we do not need to use @bot.event
-        For more information:
-        http://discordpy.readthedocs.io/en/rewrite/api.html#discord.on_member_ban
-        Check above for a list of events.
-        """
-
-        print(f'{user.name}-{user.id} was banned from {guild.name}-{guild.id}')
-
 
 def setup(bot):
     bot.add_cog(SimpleCog(bot))
