@@ -63,7 +63,8 @@ class OwnerCog(commands.Cog, name='owner'):
         setting = setting.lower()
 
         if setting == 'prefix' or setting == "ironwork" or setting == 'wishwall' \
-                or setting == 'gigiid' or setting == 'triumphant' or setting == 'birthday':
+                or setting == 'gigiid' or setting == 'triumphant' or setting == 'birthday' \
+                or setting == 'welcome' or setting == 'general':
             try:
                 config[str(ctx.message.guild.id)][setting] = change
                 await ctx.send(f'Change to {setting} made. It is now {change}')

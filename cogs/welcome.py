@@ -1,3 +1,4 @@
+import json
 import random
 import discord
 from discord.ext import commands
@@ -10,7 +11,10 @@ class WelcomeCog(commands.Cog):
 
     @commands.Cog.listener()
     async def on_member_join(self, member):
-        channel = self.bot.get_channel(610510538379755521)
+        with open('assets/json/config.json', 'r') as f:
+            config = json.load(f)
+        gen_channel = self.bot.get_channel(int(config[str(member.guild.id)]['general']))
+        welcome_channel = self.bot.get_channel(int(config[str(member.guild.id)]['welcome']))
         ment = member.mention
         welcome_messages = [
             f"\U0001f4e2 \U0000269f Say hello to {ment}!",
@@ -26,7 +30,7 @@ class WelcomeCog(commands.Cog):
             f"\U0001f4e2 \U0000269f {ment} is breaching the wall on the north side. Give them all you got!",
             f"\U0001f4e2 \U0000269f Welcome ~~Tenno~~ {ment}!"
         ]
-        await channel.send(random.choice(welcome_messages))
+        await gen_channel.send(random.choice(welcome_messages))
 
         welcome_embed = discord.Embed(title="Member joined", description=f'{member} has joined.')
         welcome_embed.add_field(name="ID:", value=f"{member.id}", inline=True)
@@ -35,12 +39,11 @@ class WelcomeCog(commands.Cog):
         welcome_embed.set_thumbnail(url=member.avatar_url)
         welcome_embed.timestamp = datetime.datetime.utcnow()
 
-        bot_role = member.guild.get_role(511306250479337476)
-        number = len(bot_role.members)
+        number = len(member.guild.bot.members)
         total = member.guild.member_count
         welcome_embed.add_field(name="Join number: ", value=f"{total - number}", inline=True)
 
-        await channel.send(embed=welcome_embed)
+        await welcome_channel.send(embed=welcome_embed)
 
     @commands.Cog.listener()
     async def on_member_remove(self, member):
