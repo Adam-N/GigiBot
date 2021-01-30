@@ -38,16 +38,20 @@ class WelcomeCog(commands.Cog):
         welcome_embed.add_field(name="Created on:", value=f"{created}", inline=True)
         welcome_embed.set_thumbnail(url=member.avatar_url)
         welcome_embed.timestamp = datetime.datetime.utcnow()
-
-        number = len(member.guild.bot.members)
+        i = 0
+        for member in member.guild.members:
+            if member.bot:
+                i += 1
         total = member.guild.member_count
-        welcome_embed.add_field(name="Join number: ", value=f"{total - number}", inline=True)
+        welcome_embed.add_field(name="Join number: ", value=f"{total - i}", inline=True)
 
         await welcome_channel.send(embed=welcome_embed)
 
     @commands.Cog.listener()
     async def on_member_remove(self, member):
-        channel = self.bot.get_channel(610510538379755521)
+        with open('assets/json/config.json', 'r') as f:
+            config = json.load(f)
+        welcome_channel = self.bot.get_channel(int(config[str(member.guild.id)]['welcome']))
 
         leave_embed = discord.Embed(title="Member left", description=f'{member} has left')
         leave_embed.add_field(name="Nick: ", value=f"{member.nick}", inline=True)
@@ -62,7 +66,7 @@ class WelcomeCog(commands.Cog):
         leave_embed.set_thumbnail(url=member.avatar_url)
         leave_embed.timestamp = datetime.datetime.utcnow()
 
-        await channel.send(embed=leave_embed)
+        await welcome_channel.send(embed=leave_embed)
 
 
 def setup(bot):

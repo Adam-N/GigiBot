@@ -1,6 +1,5 @@
 import json
 import os
-import random
 import discord
 from discord.ext import commands, tasks
 
@@ -23,7 +22,7 @@ class TriumphantCog(commands.Cog, name='Triumphant'):
             id_list = []
             name_list = []
 
-            with open(f'assets/json/server/{guild.id}/profiles.json', 'r') as f:
+            with open(f'assets/json/server/{str(guild.id)}/profiles.json', 'r') as f:
                 profiles = json.load(f)
             with open('assets/json/config.json', 'r') as f:
                 config = json.load(f)
@@ -31,7 +30,7 @@ class TriumphantCog(commands.Cog, name='Triumphant'):
             if emoji.name == '🏆':
                 await message.add_reaction(emoji)
 
-                posting_channel = await self.bot.fetch_channel(int(config[payload.guild_id]['triumphant']))
+                posting_channel = await self.bot.fetch_channel(int(config[str(guild.id)]['triumphant']))
                 if message.embeds:
 
                     for member in guild.members:
@@ -95,8 +94,6 @@ class TriumphantCog(commands.Cog, name='Triumphant'):
                 if id_list:
                     name_string = "\n".join(name_list)
                     id_string = "\n".join(id_list)
-                    print(f"1 {id_string}")
-                    print(f"2 {name_string}")
                     embed.add_field(name="People mentioned in the message:", value=name_string)
                     embed.add_field(name="IDs:", value=id_string)
 
@@ -235,7 +232,7 @@ class TriumphantCog(commands.Cog, name='Triumphant'):
     async def start_timer(self, ctx):
         self.triumphant_timer.start()
 
-    @tasks.loop(minutes=10)
+    @tasks.loop(hours=168)
     async def triumphant_timer(self):
         for server in self.bot.guilds:
             with open('assets/json/config.json', 'r') as f:

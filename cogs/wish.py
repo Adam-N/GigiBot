@@ -103,7 +103,7 @@ class WishWall(commands.Cog, name='Wishwall'):
             comm_owner = old_embed.footer.text[12:]
         if channel.id == wish_channel.id and not member.bot:
             if payload.emoji.name == '✅':
-                if not (member.name + '#' + member.discriminator) == comm_owner:
+                if not (member.name + '#' + member.discriminator) in comm_owner:
                     new_embed = discord.Embed(title=old_embed.title,
                                               description=old_embed.description,
                                               color=old_embed.color,

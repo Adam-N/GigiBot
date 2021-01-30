@@ -7,7 +7,7 @@ from discord.ext import commands
 
 def get_prefix(bot, message):
     """A callable Prefix for our bot. This could be edited to allow per server prefixes."""
-    if os.path.isfile('cogs/config.json'):
+    if os.path.isfile('assets/json/config.json'):
         with open('assets/json/config.json', 'r') as f:
             config = json.load(f)
         if config[str(message.guild.id)]['prefix']:

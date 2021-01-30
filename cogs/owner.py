@@ -75,11 +75,11 @@ class OwnerCog(commands.Cog, name='owner'):
 
         elif setting == "bot_channel":
             try:
-                list = [config[str(ctx.message.guild.id)][setting]]
-                list.append(change)
-                config[setting] = list
+
+                config[str(ctx.message.guild.id)][setting].append(change)
             except KeyError:
-                config[str(ctx.message.guild.id)][setting] = change
+                config[str(ctx.message.guild.id)][setting] = {}
+                config[str(ctx.message.guild.id)][setting] = [change]
 
             await ctx.send(f'Added {change} to {setting} list')
 

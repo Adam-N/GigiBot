@@ -355,7 +355,7 @@ class Profile(commands.Cog):
     async def wanted(self, ctx, *text):
         """Sets the custom wanted text on your profile card. """
         text = " ".join(text)
-        with open(f'/assets/json/server/{str(ctx.guild.id)}/profiles.json', 'r') as f:
+        with open(f'assets/json/server/{str(ctx.guild.id)}/profiles.json', 'r') as f:
             users = json.load(f)
         if len(text) > 0:
             if len(text) > 50:

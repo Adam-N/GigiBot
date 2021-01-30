@@ -7,13 +7,17 @@ from discord.ext import commands, tasks
 import json
 
 
-class LevelCog(commands.Cog, name= 'Levels'):
+class LevelCog(commands.Cog, name='Levels'):
     def __init__(self, bot):
         self.bot = bot
         self.remove_birthday.start()
 
     @commands.Cog.listener()
     async def on_message(self, message):
+        with open(f'assets/json/config.json', 'r') as f:
+            config = json.load(f)
+        if str(message.channel.id) in config[str(message.guild.id)]['bot_channel'] or 'bot' in message.channel.name:
+            return
         if not message.author.bot:
             if os.path.isfile(f'assets/json/server/{str(message.guild.id)}/level.json'):
                 with open(f'assets/json/server/{str(message.guild.id)}/level.json', 'r') as f:
@@ -214,8 +218,11 @@ class LevelCog(commands.Cog, name= 'Levels'):
         channels. """
         if thankee.bot:
             return
+        with open(f'assets/json/config.json', 'r') as f:
+            config = json.load(f)
 
-        if 'bot' in ctx.channel.name:
+        if str(ctx.channel.id) in config[str(ctx.guild.id)]['bot_channel'] or 'bot' in ctx.channel.name:
+            await ctx.send('You must use this command in a non-bot channel.')
             return
 
         # This is the shame section.
@@ -589,6 +596,12 @@ class LevelCog(commands.Cog, name= 'Levels'):
         if member.id != ctx.author.id:
             bonus = random.randint(2, 4)
 
+        # tries to add one to the daycount, if it doesn't exist it will create the value.
+        try:
+            users[str(ctx.author.id)]['daycount'] += 1
+        except KeyError:
+            users[str(ctx.author.id)]['daycount'] = 1
+
         # gives experience to the member or updates their data and then gives experience.
         try:
             users[str(member.id)]["experience"] += ((60 * users[str(ctx.author.id)]['daycount']) / 2) * bonus
@@ -596,21 +609,19 @@ class LevelCog(commands.Cog, name= 'Levels'):
             await self.update_data(users, member)
             users[str(member.id)]["experience"] = ((60 * users[str(ctx.author.id)]['daycount']) / 2) * bonus
 
-        # tries to add one to the daycount, if it doesn't exist it will create the value.
-        try:
-            users[str(ctx.author.id)]['daycount'] += 1
-        except KeyError:
-            users[str(ctx.author.id)]['daycount'] = 1
-
         # If you have been over 36 hours doing your daily it resets your streak.
-        if dt.datetime.utcnow() > dt.datetime.strptime(users[str(ctx.author.id)]['daystamp'], "%Y-%m-%d %H:%M:%S") + \
-                dt.timedelta(hours=36):
-            users[str(ctx.author.id)]["daycount"] = 1
-            day_embed = discord.Embed(title="You claimed your daily XP bonus!", description="You missed the bonus "
-                                                                                            "window. Your streak has "
-                                                                                            "been reset to 1")
+        try:
+            if dt.datetime.utcnow() > dt.datetime.strptime(users[str(ctx.author.id)]['daystamp'], "%Y-%m-%d %H:%M:%S") + \
+                    dt.timedelta(hours=36):
+                users[str(ctx.author.id)]["daycount"] = 1
+                day_embed = discord.Embed(title="You claimed your daily XP bonus!", description="You missed the bonus "
+                                                                                                "window. Your streak has "
+                                                                                                "been reset to 1")
+        except KeyError:
+            pass
+
         # if you are at a streak of 5 you get a bonus.
-        elif users[str(ctx.author.id)]["daycount"] == 5:
+        if users[str(ctx.author.id)]["daycount"] == 5:
             users[str(ctx.author.id)]["daycount"] = 1
             users[str(member.id)]["experience"] += 75
             day_embed = discord.Embed(title="You claimed your daily XP bonus!", description="\U00002728 Today is your "
@@ -620,11 +631,9 @@ class LevelCog(commands.Cog, name= 'Levels'):
 
         # For streaks between 1 and 5.
         elif 5 > users[str(ctx.author.id)]["daycount"]:
-            print(users[str(ctx.author.id)]['daycount'])
             day_embed = discord.Embed(title="You claimed your daily XP bonus!",
                                       description=f"You are on day {users[str(ctx.author.id)]['daycount']}. Keep it up "
                                       f"to get to day 5!  ")
-            print(users[str(ctx.author.id)]['daycount'])
 
         # creates the time stamp.
         users[str(ctx.author.id)]["daystamp"] = str(
@@ -637,7 +646,7 @@ class LevelCog(commands.Cog, name= 'Levels'):
                                     '/terry_coin.png')
         await ctx.send(embed=day_embed)
 
-        with open(f'server/{str(ctx.guild.id)}/level', 'w') as f:
+        with open(f'assets/json/server/{str(ctx.guild.id)}/level.json', 'w') as f:
             json.dump(users, f)
 
     async def exlusion_list_generator(self, user):
@@ -689,7 +698,6 @@ class LevelCog(commands.Cog, name= 'Levels'):
         she_role = discord.utils.get(ctx.message.guild.roles, name='She/Her')
         they_role = discord.utils.get(ctx.message.guild.roles, name='They/Them')
         birthday_role = discord.utils.get(ctx.guild.roles, name="Happy Birthday!")
-
 
         # checks if the member has one or another of the gender roles.
         if he_role in member.roles:
@@ -758,8 +766,8 @@ class LevelCog(commands.Cog, name= 'Levels'):
                 for member in birthday_role.members:
 
                     if dt.datetime.utcnow() >= dt.datetime.strptime(users[str(member.id)]['bdaystamp'],
-                                                                                         "%Y-%m-%d %H:%M:%S") + dt.timedelta(
-                                                                                            hours=23):
+                                                                    "%Y-%m-%d %H:%M:%S") + dt.timedelta(
+                        hours=23):
                         await member.remove_roles(birthday_role)
                         chan = self.bot.get_channel(config[str(server.id)]['botpost'])
                         await chan.send(f"Removed birthday role from {member.name}")
