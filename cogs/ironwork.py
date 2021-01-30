@@ -12,6 +12,7 @@ class IronWorks(commands.Cog, name='Ironworks'):
 
     @commands.command(name='commission')
     async def commission(self, ctx, *args):
+        """Use this in the Ironworks channel to issue a commission!"""
         with open('assets/json/config.json', 'r') as f:
             config = json.load(f)
         commission = ' '.join(args)

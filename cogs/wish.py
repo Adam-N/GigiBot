@@ -13,6 +13,7 @@ class WishWall(commands.Cog, name='Wishwall'):
 
     @commands.command(name='wish')
     async def wish(self, ctx, platform: str= None, *args):
+        """Use this in the WishWall channel to make a wish!"""
         with open('assets/json/config.json', 'r') as f:
             config = json.load(f)
         wish_channel = await self.bot.fetch_channel(int(config[str(ctx.message.guild.id)]['wishwall']))

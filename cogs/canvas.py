@@ -55,6 +55,7 @@ class Profile(commands.Cog):
 
     @commands.command(aliases=['add'])
     async def set(self, ctx, system: str, *name: str):
+        """Add your usernames for your game system"""
         system = system.upper()
         name_joined = " ".join(name)
         with open(f'assets/json/server/{str(ctx.guild.id)}/profiles.json', 'r') as f:
@@ -109,6 +110,7 @@ class Profile(commands.Cog):
 
     @commands.command()
     async def get(self, ctx, system: str, member: discord.Member = None):
+        """Get a users usernames."""
         if member is None:
             member = ctx.author
         system = system.upper()
@@ -142,6 +144,7 @@ class Profile(commands.Cog):
 
     @commands.command()
     async def search(self, ctx, query: str = None, exact_match: bool = False):
+        """Search for a user"""
         matches = []
         if query:
             with open(f'assets/json/server/{str(ctx.guild.id)}/profiles.json', 'r') as f:
@@ -173,6 +176,7 @@ class Profile(commands.Cog):
 
     @commands.command(aliases=['del'])
     async def delete(self, ctx, system):
+        """Delete a username"""
         with open(f'assets/json/server/{str(ctx.guild.id)}/profiles.json', 'r') as f:
             users = json.load(f)
         system = system.upper()
@@ -207,6 +211,7 @@ class Profile(commands.Cog):
 
     @commands.command(aliases=['plist'])
     async def profile_list(self, ctx, member: discord.Member = None):
+        """Text only profile"""
         if member is None:
             member = ctx.author
         profile = {}
@@ -242,6 +247,7 @@ class Profile(commands.Cog):
 
     @commands.command(aliases=['card', 'profilecard', 'canvas'])
     async def profile(self, ctx, member: discord.Member = None):
+        """Displays your profile card."""
         sys_alias = {'PS': "assets/icon/ps_logo.png",
                      'XB': "assets/icon/xb_logo.png",
                      'STEAM': "assets/icon/steam_logo.png",
@@ -347,6 +353,7 @@ class Profile(commands.Cog):
 
     @commands.command()
     async def wanted(self, ctx, *text):
+        """Sets the custom wanted text on your profile card. """
         text = " ".join(text)
         with open(f'/assets/json/server/{str(ctx.guild.id)}/profiles.json', 'r') as f:
             users = json.load(f)

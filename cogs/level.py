@@ -560,6 +560,7 @@ class LevelCog(commands.Cog, name= 'Levels'):
 
     @commands.command()
     async def daily(self, ctx, member: discord.Member = None):
+        """Grants an amount of XP once every 24 hours"""
         if member is None:
             member = ctx.author
 
@@ -665,6 +666,7 @@ class LevelCog(commands.Cog, name= 'Levels'):
 
     @commands.command()
     async def birthday(self, ctx, member: discord.Member):
+        """Wish a user a happy birthday!"""
         with open(f'assets/json/server/{str(ctx.guild.id)}/level.json', 'r+') as f:
             users = json.load(f)
         # Time check to see if it has been a year since the command has been used for a user.

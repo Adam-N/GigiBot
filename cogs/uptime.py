@@ -12,6 +12,7 @@ class UptimeCog(commands.Cog):
 
     @commands.command(pass_context=True)
     async def uptime(self, ctx):
+        """Shows the uptime for the bot."""
         current_time = time()
         difference = int(round(current_time - self.start_time))
         time_converted = datetime.timedelta(seconds=difference)

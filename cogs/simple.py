@@ -11,6 +11,7 @@ class SimpleCog(commands.Cog, name='simple'):
 
     @commands.command()
     async def numgen(self, ctx, number: int):
+        """Generates a set of random numbers."""
         if number > 25:
             await ctx.send("Too big...")
             return

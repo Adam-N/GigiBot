@@ -143,7 +143,7 @@ class TriumphantCog(commands.Cog, name='Triumphant'):
                 with open(f'assets/json/server/{guild.id}/triumphant.json', 'w') as f:
                     json.dump(users, f)
 
-    @commands.command()
+    @commands.command(hidden=True)
     @commands.is_owner()
     async def triumph_delete(self, ctx, member_id: int):
         member = await ctx.guild.fetch_member(member_id=member_id)
@@ -162,7 +162,7 @@ class TriumphantCog(commands.Cog, name='Triumphant'):
             json.dump(users, f)
         await ctx.send(f"Succesfully deleted {member.name} from triumphant list. ID: {member_id}")
 
-    @commands.command()
+    @commands.command(hidden=True)
     @commands.is_owner()
     async def triumph_add(self, ctx, member_id: int):
         member = await ctx.guild.fetch_member(member_id=member_id)
@@ -187,7 +187,7 @@ class TriumphantCog(commands.Cog, name='Triumphant'):
         add_embed.add_field(name="User Id:", value=f"{member_id}")
         await ctx.send(embed=add_embed)
 
-    @commands.command()
+    @commands.command(hidden=True)
     @commands.is_owner()
     async def triumph_list(self, ctx):
         id_list = ''
@@ -205,7 +205,7 @@ class TriumphantCog(commands.Cog, name='Triumphant'):
         list_embed.add_field(name="IDs:", value=f"{id_list}")
         await ctx.send(embed=list_embed)
 
-    @commands.command()
+    @commands.command(hidden=True)
     @commands.is_owner()
     async def give_triumphant(self, ctx):
         triumphant_role = discord.utils.get(ctx.author.guild.roles, name="Triumphant/Reward")
@@ -230,19 +230,7 @@ class TriumphantCog(commands.Cog, name='Triumphant'):
         triumph_embed.add_field(name="Users:", value=f"{member_list}")
         await ctx.send(embed=triumph_embed)
 
-    @commands.command()
-    @commands.is_owner()
-    async def embed(self, ctx):
-        # This command is for testing purposes only!
-        member = random.choice(ctx.guild.members)
-        if member.bot:
-            while member.bot:
-                member = random.choice(ctx.guild.members)
-        embed = discord.Embed(title="title",
-                              description=f'rough')
-        await ctx.send(embed=embed)
-
-    @commands.command()
+    @commands.command(hidden=True)
     @commands.is_owner()
     async def start_timer(self, ctx):
         self.triumphant_timer.start()
