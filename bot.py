@@ -1,11 +1,19 @@
+import json
+import os
+
 import discord
 from discord.ext import commands
 
 
 def get_prefix(bot, message):
     """A callable Prefix for our bot. This could be edited to allow per server prefixes."""
-
-    prefixes = ['?']
+    if os.path.isfile('cogs/config.json'):
+        with open('assets/json/config.json', 'r') as f:
+            config = json.load(f)
+        if config[str(message.guild.id)]['prefix']:
+            prefixes = config[str(message.guild.id)]['prefix']
+    else:
+        prefixes = ['?']
 
     # Check to see if we are outside of a guild. e.g DM's etc.
     if not message.guild:
@@ -18,7 +26,8 @@ def get_prefix(bot, message):
 
 # Below cogs represents our folder our cogs are in. Following is the file name. So 'meme.py' in cogs, would be cogs.meme
 # Think of it like a dot path import
-initial_cogs = ['members', 'owner', 'simple', 'timer', 'uptime']
+initial_cogs = ['cogs.members', 'cogs.owner', 'cogs.simple', 'cogs.timer', 'cogs.uptime', 'cogs.friend',
+                'cogs.level', 'cogs.triumphant', 'cogs.welcome', 'cogs.wish', 'cogs.ironwork']
 intents = discord.Intents.default()
 intents.members = True
 bot = commands.Bot(command_prefix=get_prefix, description='A bot for GoldxGuns', intents=intents)
