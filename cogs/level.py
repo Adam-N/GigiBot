@@ -180,7 +180,7 @@ class LevelCog(commands.Cog, name='Levels'):
                 users[str(ctx.author.id)]['timestamp'] = str(dt.datetime.strftime(
                     dt.datetime.utcnow(), "%Y-%m-%d %H:%M:%S"))
 
-                with open(f'server/{ctx.guild.id}/level.json', 'w+') as f:
+                with open(f'assets/server/{ctx.guild.id}/level.json', 'w+') as f:
                     json.dump(users, f)
                 await ctx.channel.send('File Created')
                 return
@@ -446,6 +446,8 @@ class LevelCog(commands.Cog, name='Levels'):
         # It also removes all of the roles from the top 5 as well.
 
         async with ctx.message.channel.typing():
+            with open('assets/json/config.json', 'r') as f:
+                config = json.load(f)
 
             with open(f'assets/json/server/{str(ctx.guild.id)}/level.json', 'r') as f:
                 users = json.load(f)
@@ -457,10 +459,10 @@ class LevelCog(commands.Cog, name='Levels'):
             exclusion_list = await self.exlusion_list_generator(ctx.message.author)
 
             # Initializes the various role variables.
-            top_exp_role = discord.utils.get(ctx.message.guild.roles, name="Most Wanted")
-            top_thanked_role = discord.utils.get(ctx.message.guild.roles, name="Most Helpful")
-            top_thanks_role = discord.utils.get(ctx.message.guild.roles, name="Most Thankful")
-            top_5_role = discord.utils.get(ctx.message.guild.roles, name="Top 5")
+            top_exp_role = ctx.message.guild.get_role(int(config[str(ctx.message.guild.id)]['toptalker']))
+            top_thanked_role = ctx.message.guild.get_role(int(config[str(ctx.message.guild.id)]['topthanks']))
+            top_thanks_role = ctx.message.guild.get_role(int(config[str(ctx.message.guild.id)]['topthanker']))
+            top_5_role = ctx.message.guild.get_role(int(config[str(ctx.message.guild.id)]['top5']))
 
             # Iterates over the dictionary from the JSON file.
             # each section is caught in a try except block just in case they don't have
@@ -534,7 +536,7 @@ class LevelCog(commands.Cog, name='Levels'):
                 users[key]['thanker'] = 0
 
             # Writes to the JSON
-            with open(f'server/{str(ctx.guild.id)}/level.json', 'w+') as f:
+            with open(f'assets/json/server/{str(ctx.guild.id)}/level.json', 'w+') as f:
                 json.dump(users, f)
 
             await ctx.send("Reset is Complete.")
@@ -651,13 +653,16 @@ class LevelCog(commands.Cog, name='Levels'):
 
     async def exlusion_list_generator(self, user):
 
+        with open('assets/json/config.json', 'r') as f:
+            config = json.load(f)
+
         # List and roles initialization
         exclusion_list = []
-        ringleader_role = discord.utils.get(user.guild.roles, name="Ringleaders/Officer")
-        mod_role = discord.utils.get(user.guild.roles, name="Enforcers/Moderator")
-        top_exp_role = discord.utils.get(user.guild.roles, name="Most Wanted")
-        top_thanked_role = discord.utils.get(user.guild.roles, name="Most Helpful")
-        top_thanks_role = discord.utils.get(user.guild.roles, name="Most Thankful")
+        ringleader_role = user.guild.get_role(int(config[str(user.guild.id)]['ringleader']))
+        mod_role = user.guild.get_role(int(config[str(user.guild.id)]['mod']))
+        top_exp_role = user.guild.get_role(int(config[str(user.guild.id)]['toptalker']))
+        top_thanked_role = user.guild.get_role(int(config[str(user.guild.id)]['topthanks']))
+        top_thanks_role = user.guild.get_role(int(config[str(user.guild.id)]['topthanker']))
 
         # For each group this iterates over the members in the role to add to the exclusion list.
         for ringleader in ringleader_role.members:
@@ -767,7 +772,7 @@ class LevelCog(commands.Cog, name='Levels'):
 
                     if dt.datetime.utcnow() >= dt.datetime.strptime(users[str(member.id)]['bdaystamp'],
                                                                     "%Y-%m-%d %H:%M:%S") + dt.timedelta(
-                        hours=23):
+                                                                    hours=23):
                         await member.remove_roles(birthday_role)
                         chan = self.bot.get_channel(config[str(server.id)]['botpost'])
                         await chan.send(f"Removed birthday role from {member.name}")

@@ -11,8 +11,18 @@ class WishWall(commands.Cog, name='Wishwall'):
     def __init__(self, bot):
         self.bot = bot
 
+    @staticmethod
+    async def remove_reacts(message):
+        try:
+            for react in message.reactions:
+                async for user in react.users():
+                    if not user.bot:
+                        await react.remove(user)
+        finally:
+            return
+
     @commands.command(name='wish')
-    async def wish(self, ctx, platform: str= None, *args):
+    async def wish(self, ctx, platform: str = None, *args):
         """Use this in the WishWall channel to make a wish!"""
         with open('assets/json/config.json', 'r') as f:
             config = json.load(f)
@@ -27,7 +37,6 @@ class WishWall(commands.Cog, name='Wishwall'):
         platform = platform.lower()
         if platform is not None:
             for i in alias_list:
-
                 if platform in alias_list[i]:
                     platform = i
                     break
@@ -37,12 +46,12 @@ class WishWall(commands.Cog, name='Wishwall'):
             if not platform:
                 new_embed = discord.Embed(title="Error",
                                           description=f"*Please specify your platform.*\n"
-                                                      f"***{ctx.prefix}wish __<platform>__ <wish>***",
+                                          f"***{ctx.prefix}wish __<platform>__ <wish>***",
                                           color=0xff0209)
             elif len(wish) == 0:
                 new_embed = discord.Embed(title="Error",
                                           description=f"*Please include a full description of you wish.*\n"
-                                                      f"***{ctx.prefix}wish <platform> __<wish>__***",
+                                          f"***{ctx.prefix}wish <platform> __<wish>__***",
                                           color=0xff0209)
             else:
                 if ctx.message.author.nick:
@@ -68,8 +77,8 @@ class WishWall(commands.Cog, name='Wishwall'):
     async def on_message(self, message):
         with open('assets/json/config.json', 'r') as f:
             config = json.load(f)
-        user = await self.bot.fetch_user(message.author.id)
         wish_channel = await self.bot.fetch_channel(int(config[str(message.guild.id)]['wishwall']))
+        user = await self.bot.fetch_user(message.author.id)
         if message.channel.id == wish_channel.id:
             if user.bot and str(user.id) in config[str(message.guild.id)]['gigiid']:
                 try:
@@ -89,6 +98,7 @@ class WishWall(commands.Cog, name='Wishwall'):
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):
+
         with open('assets/json/config.json', 'r') as f:
             config = json.load(f)
         wish_channel = await self.bot.fetch_channel(int(config[str(payload.guild_id)]['wishwall']))
@@ -103,7 +113,7 @@ class WishWall(commands.Cog, name='Wishwall'):
             comm_owner = old_embed.footer.text[12:]
         if channel.id == wish_channel.id and not member.bot:
             if payload.emoji.name == '✅':
-                if not (member.name + '#' + member.discriminator) in comm_owner:
+                if not (member.name + '#' + member.discriminator) == comm_owner:
                     new_embed = discord.Embed(title=old_embed.title,
                                               description=old_embed.description,
                                               color=old_embed.color,
@@ -114,7 +124,8 @@ class WishWall(commands.Cog, name='Wishwall'):
                     for i, field in enumerate(old_embed.fields):
                         for react in message.reactions:
                             async for user in react.users():
-                                if react.emoji == '✅' and not user.bot:
+                                if str(react.emoji) == '✅' and not user.bot and not (
+                                                                                            member.name + '#' + member.discriminator) == comm_owner:
                                     if field.name == '**Accepted by:**':
                                         if field.value == 'N/A':
                                             field.value = str(user.mention) + '\n'
@@ -125,19 +136,23 @@ class WishWall(commands.Cog, name='Wishwall'):
                                                                       description="*You already accepted this wish.*",
                                                                       color=0xff0209)
                                             await channel.send(embed=new_embed)
+                                            await self.remove_reacts(message)
+                                            return
                         new_embed.add_field(name=field.name,
                                             value=field.value,
                                             inline=True)
                     await message.edit(embed=new_embed)
+                    await self.remove_reacts(message)
+                    return
                 else:
                     new_embed = discord.Embed(title="Error",
                                               description="*You cannot grant your own wish.*",
                                               color=0xff0209)
                     await channel.send(embed=new_embed)
+                    await self.remove_reacts(message)
+                    return
             elif payload.emoji.name == '❎':
                 if str(member.name) in comm_owner:
-                    await discord.Message.delete(message)
-                elif member.permissions_in(wish_channel).manage_messages and not member.bot:
                     await discord.Message.delete(message)
                 else:
                     new_embed = discord.Embed(title=old_embed.title,
@@ -159,13 +174,8 @@ class WishWall(commands.Cog, name='Wishwall'):
                                             value=field.value,
                                             inline=True)
                     await message.edit(embed=new_embed)
-        try:
-            for react in message.reactions:
-                async for user in react.users():
-                    if not user.bot:
-                        await react.remove(user)
-        finally:
-            return
+                    await self.remove_reacts(message)
+                    return
 
 
 def setup(bot):

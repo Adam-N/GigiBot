@@ -282,14 +282,14 @@ class Profile(commands.Cog):
             draw.line(((element_buffer * 2), 60, (ref_img.width - (element_buffer * 2)), 60),
                       fill=(16, 16, 16), width=5)
             if member.avatar is None:
-                avatar_image = Image.open("assets/gigi_avatar.png")
+                avatar_image = Image.open("assets/gigi_avatar.png").resize((128, 128)).convert('RGBA')
             elif member.avatar:
                 avatar_asset = member.avatar_url_as(format='png', size=128)
                 buffer_avatar = io.BytesIO()
                 await avatar_asset.save(buffer_avatar)
                 buffer_avatar.seek(0)
                 avatar_image = Image.open(buffer_avatar).resize((128, 128)).convert('RGBA')
-                emblem_image = Image.open(f"assets/emblem_{level_val}.png").convert('RGBA')
+            emblem_image = Image.open(f"assets/emblem_{level_val}.png").convert('RGBA')
             draw.rectangle(((pfp_buffer[0] - 5, pfp_buffer[1] - 5),
                             (pfp_buffer[0] + avatar_image.width + 4), (pfp_buffer[1] + avatar_image.height + 4)),
                            fill=None, outline=(16, 16, 16), width=5)
