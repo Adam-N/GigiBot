@@ -27,7 +27,7 @@ def get_prefix(bot, message):
 # Below cogs represents our folder our cogs are in. Following is the file name. So 'meme.py' in cogs, would be cogs.meme
 # Think of it like a dot path import
 initial_cogs = ['cogs.members', 'cogs.owner', 'cogs.simple', 'cogs.timer', 'cogs.uptime', 'cogs.friend',
-                'cogs.level', 'cogs.triumphant', 'cogs.welcome', 'cogs.wish', 'cogs.ironwork']
+                'cogs.level', 'cogs.triumphant', 'cogs.welcome', 'cogs.wish', 'cogs.ironwork', 'cogs.canvas']
 intents = discord.Intents.default()
 intents.members = True
 bot = commands.Bot(command_prefix=get_prefix, description='A bot for GoldxGuns', intents=intents)
