@@ -51,7 +51,7 @@ class OwnerCog(commands.Cog, name='owner'):
             await ctx.send('**`SUCCESS`**')
 
     @commands.command(name="update", hidden=True, pass_context=True, aliases=['change', 'modify'])
-    @commands.has_guild_permissions(administrator=True)
+    @commands.is_owner()
     async def update(self, ctx, setting: str, change: str):
         """changes a setting in the config file"""
         if os.path.isfile('assets/json/config.json'):
@@ -91,6 +91,11 @@ class OwnerCog(commands.Cog, name='owner'):
 
         with open('assets/json/config.json', 'w') as f:
             json.dump(config, f)
+
+    @commands.command(hidden=True)
+    @commands.is_owner()
+    async def shutdown(self, ctx):
+        await ctx.bot.logout()
 
 def setup(bot):
     bot.add_cog(OwnerCog(bot))

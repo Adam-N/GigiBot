@@ -289,7 +289,7 @@ class Profile(commands.Cog):
                 await avatar_asset.save(buffer_avatar)
                 buffer_avatar.seek(0)
                 avatar_image = Image.open(buffer_avatar).resize((128, 128)).convert('RGBA')
-            emblem_image = Image.open(f"assets/emblem_{level_val}.png").convert('RGBA')
+            emblem_image = Image.open(f"assets/emblem_1.png").convert('RGBA')
             draw.rectangle(((pfp_buffer[0] - 5, pfp_buffer[1] - 5),
                             (pfp_buffer[0] + avatar_image.width + 4), (pfp_buffer[1] + avatar_image.height + 4)),
                            fill=None, outline=(16, 16, 16), width=5)

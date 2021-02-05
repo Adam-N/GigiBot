@@ -1,3 +1,4 @@
+
 import os
 import json
 import discord
@@ -5,7 +6,7 @@ from discord.ext import commands
 
 
 def get_prefix(bot, message):
-    if os.path.isfile('cogs/config.json'):
+    if os.path.isfile('assets/json/config.json'):
         with open('assets/json/config.json', 'r') as f:
             config = json.load(f)
         if config[str(message.guild.id)]['prefix']:
@@ -17,7 +18,9 @@ def get_prefix(bot, message):
     return commands.when_mentioned_or(*prefixes)(bot, message)
 
 
-initial_cogs = ['cogs.owner']
+initial_cogs = ['cogs.owner', 'cogs.canvas', 'cogs.friend', 'cogs.ironwork', 'cogs.level', 'cogs.members',
+                'cogs.simple',
+                'cogs.starboard', 'cogs.timer', 'cogs.triumphant', 'cogs.uptime', 'cogs.welcome', 'cogs.wish']
 intents = discord.Intents.default()
 intents.members = True
 bot = commands.Bot(command_prefix=get_prefix, description='A bot designed for GoldxGuns', intents=intents)

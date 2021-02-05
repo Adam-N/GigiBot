@@ -63,8 +63,7 @@ class MembersCog(commands.Cog, name='members'):
         i = 0
         role_name_joined = " ".join(role_name)
         role = discord.utils.get(ctx.message.guild.roles, name=role_name_joined)
-        for member in role.members:
-            i += 1
+
         embed = discord.Embed(title=f"{i} people in {role}", value=".")
         await ctx.send(embed=embed)
 

@@ -6,6 +6,8 @@ import discord
 from discord.ext import commands, tasks
 import json
 
+from discord.ext.commands import has_permissions
+
 
 class LevelCog(commands.Cog, name='Levels'):
     def __init__(self, bot):
@@ -24,12 +26,8 @@ class LevelCog(commands.Cog, name='Levels'):
                     users = json.load(f)
                 # This is checking to see if you sent a message that recieved xp in the last 30 s.
                 try:
-                    old_time = dt.datetime.strptime(users[message.author.id]['timestamp'],
-                                                    "%Y-%m-%d %H:%M:%S")
-                    current_time = dt.datetime.utcnow() - dt.timedelta(seconds=30)
-                    current_time_string = dt.datetime.strftime(current_time, "%Y-%m-%d %H:%M:%S")
-                    current_time_format = dt.datetime.strptime(str(current_time_string), "%Y-%m-%d %H:%M:%S")
-                    if old_time >= current_time_format:
+                    if dt.datetime.strptime(users[message.author.id]['timestamp'],"%Y-%m-%d %H:%M:%S") + \
+                            dt.timedelta(seconds=30) <= dt.datetime.utcnow():
                         return
                 # Needs the key error, if they haven't recieved any xp by chatting it will throw it
                 except KeyError:
@@ -92,7 +90,7 @@ class LevelCog(commands.Cog, name='Levels'):
 
         # This is checking to see if people who are listed in the top 5 are part of the exclusion list.
         # The exclusion list includes staff, and people who have monthly award roles.
-        if len(top_5_dict_sorted) >= 5:
+        if len(top_5_dict_sorted) > 5:
             i = 0
             while len(top_5) < 5:
                 if int(list(top_5_dict_sorted.keys())[i]) in exclusion_list:
@@ -130,62 +128,47 @@ class LevelCog(commands.Cog, name='Levels'):
             member = ctx.message.author
         if member.bot:
             return
+        with open(f'assets/json/server/{str(ctx.guild.id)}/level.json', 'r') as f:
+            users = json.load(f)
+        lvl = users[str(member.id)]['level']
+        exp = users[str(member.id)]['experience']
+        embed = discord.Embed(title='Level {}'.format(int(lvl)), description=f"{exp} XP ",
+                              color=member.top_role.colour)
+        embed.set_author(name=member, icon_url=ctx.author.avatar_url)
         try:
-            with open(f'assets/json/server/{str(ctx.guild.id)}/level.json', 'r') as f:
-                users = json.load(f)
-            lvl = users[str(member.id)]['level']
-            exp = users[str(member.id)]['experience']
-            embed = discord.Embed(title='Level {}'.format(int(lvl)), description=f"{exp} XP ",
-                                  color=member.top_role.colour)
-            embed.set_author(name=member, icon_url=ctx.author.avatar_url)
-            try:
-                thanks = users[str(member.id)]['numberofthanks']
-                embed.add_field(name="Number of thanks this month:", value=f"{thanks}")
-            except KeyError:
-                pass
-            try:
-                all_time_thanks = users[str(member.id)]['alltimethanks']
-                embed.add_field(name="Number of thanks all time:", value=f"{all_time_thanks}")
-            except KeyError:
-                pass
-            try:
-                thanker = users[str(member.id)]["thanker"]
-                embed.add_field(name="Number of times you thanked someone:", value=f'{thanker}')
-            except KeyError:
-                pass
-            try:
-                thanker_alltime = users[str(member.id)]["thankeralltime"]
-                embed.add_field(name="Number of times you thank someone (all-time):", value=f'{thanker_alltime}')
-            except KeyError:
-                pass
-            embed.set_thumbnail(url=member.avatar_url)
-            await ctx.send(embed=embed)
-        except:
-            await ctx.send("Something seems to have gone wrong.")
+            thanks = users[str(member.id)]['numberofthanks']
+            embed.add_field(name="Number of thanks this month:", value=f"{thanks}")
+        except KeyError:
+            pass
+        try:
+            all_time_thanks = users[str(member.id)]['alltimethanks']
+            embed.add_field(name="Number of thanks all time:", value=f"{all_time_thanks}")
+        except KeyError:
+            pass
+        try:
+            thanker = users[str(member.id)]["thanker"]
+            embed.add_field(name="Number of times you thanked someone:", value=f'{thanker}')
+        except KeyError:
+            pass
+        try:
+            thanker_alltime = users[str(member.id)]["thankeralltime"]
+            embed.add_field(name="Number of times you thank someone (all-time):", value=f'{thanker_alltime}')
+        except KeyError:
+            pass
+        embed.set_thumbnail(url=member.avatar_url)
+        await ctx.send(embed=embed)
 
-    @commands.command(aliases=["create", "make"], hidden=True)
+
+    @commands.command(aliases=['build_json'], hidden=True)
     @commands.is_owner()
+    @commands.guild_only()
     async def create_json(self, ctx):
-        """Creates the JSON file for the level system"""
-        try:
-            if os.path.isfile(f'assets/json/server/{str(ctx.guild.id)}/level.json'):
-                await ctx.channel.send('File already exists.')
-                return
-
-            elif not os.path.isfile(f'assets/json/server/{str(ctx.guild.id)}/level.json'):
-                users = {}
-                users[str(ctx.author.id)] = {}
-                users[str(ctx.author.id)]['experience'] = 0
-                users[str(ctx.author.id)]['level'] = 1
-                users[str(ctx.author.id)]['timestamp'] = str(dt.datetime.strftime(
-                    dt.datetime.utcnow(), "%Y-%m-%d %H:%M:%S"))
-
-                with open(f'assets/server/{ctx.guild.id}/level.json', 'w+') as f:
-                    json.dump(users, f)
-                await ctx.channel.send('File Created')
-                return
-        except:
-            await ctx.channel.send('Something went wrong, the file was not created')
+        users = {}
+        for member in ctx.guild.members:
+            await self.update_data(users,member)
+        with open(f'assets/json/server/{str(ctx.guild.id)}/level.json', 'w') as f:
+            json.dump(users, f)
+        await ctx.send("Done")
 
     @commands.is_owner()
     @commands.command(hidden=True)
@@ -272,7 +255,7 @@ class LevelCog(commands.Cog, name='Levels'):
                 if old_time <= current_time_format:
                     day_delay_embed = discord.Embed(title="\U0001f550 You have to wait more than 24 hours to thank "
                                                           "someone again \U0001f550")
-                    day_delay_embed.set_footer(text='Time until you can thank again ')
+                    day_delay_embed.set_footer(text='Time you can thank again ')
                     day_delay_embed.timestamp = time_again
 
                     await ctx.send(embed=day_delay_embed)
@@ -328,7 +311,7 @@ class LevelCog(commands.Cog, name='Levels'):
             await self.level_up(users, thankee, ctx.channel)
 
             # Writes it back to the JSON file and sends an Embed.
-            with open(f'server/{str(ctx.guild.id)}/level.json', 'w') as f:
+            with open(f'assets/json/server/{str(ctx.guild.id)}/level.json', 'w') as f:
                 json.dump(users, f)
 
             thank_embed = discord.Embed(
@@ -339,11 +322,11 @@ class LevelCog(commands.Cog, name='Levels'):
     @commands.command(aliases=['topthank', 'topthanks', 'thankleaders', 'thankleader', 'thankleaderboard'])
     async def top_thanks(self, ctx):
         """Gives the leaderboard for number of thanks recieved!"""
-        if not os.path.isfile(f'server/{str(ctx.guild.id)}/level.json'):
+        if not os.path.isfile(f'assets/json/server/{str(ctx.guild.id)}/level.json'):
             return
 
         if os.path.isfile(f'assets/json/server/{str(ctx.guild.id)}/level.json'):
-            with open(f'assets/json/server / {str(ctx.guild.id)} / level.json', 'r') as f:
+            with open(f'assets/json/server/{str(ctx.guild.id)}/level.json', 'r') as f:
                 users = json.load(f)
 
         thank_dict = {}
@@ -387,10 +370,10 @@ class LevelCog(commands.Cog, name='Levels'):
     @commands.command(aliases=['toplevel', 'leaderboard', 'expleader', 'top'])
     async def top_level(self, ctx):
         """Gives the leaderboard for people with the highest level in the server."""
-        if not os.path.isfile(f'server/{str(ctx.guild.id)}/level.json'):
+        if not os.path.isfile(f'assets/json/server/{str(ctx.guild.id)}/level.json'):
             return
-        if os.path.isfile(f'server/{str(ctx.guild.id)}/level.json'):
-            with open(f'server/{str(ctx.guild.id)}/level.json', 'r') as f:
+        if os.path.isfile(f'assets/json/server/{str(ctx.guild.id)}/level.json'):
+            with open(f'assets/json/server/{str(ctx.guild.id)}/level.json', 'r') as f:
                 users = json.load(f)
 
         thank_dict = {}
@@ -583,7 +566,7 @@ class LevelCog(commands.Cog, name='Levels'):
                     "%Y-%m-%d %H:%M:%S") + dt.timedelta(hours=24):
                 day_delay_embed = discord.Embed(title="\U0001f550 You have to wait more than 24 hours to use your "
                                                       "daily again \U0001f550")
-                day_delay_embed.set_footer(text='Time until you can use your daily bonus again ')
+                day_delay_embed.set_footer(text='Time when you can use your daily bonus again ')
                 day_delay_embed.timestamp = dt.datetime.strptime(users[str(ctx.author.id)]['daystamp'],
                                                                  "%Y-%m-%d %H:%M:%S") + dt.timedelta(hours=24)
 
@@ -640,6 +623,7 @@ class LevelCog(commands.Cog, name='Levels'):
         # creates the time stamp.
         users[str(ctx.author.id)]["daystamp"] = str(
             dt.datetime.strftime(dt.datetime.utcnow(), "%Y-%m-%d %H:%M:%S"))
+        print(users[str(ctx.author.id)]["daystamp"])
 
         # Adds a field to the embed for the friend bonus.
         if member.id != ctx.author.id:
@@ -679,6 +663,7 @@ class LevelCog(commands.Cog, name='Levels'):
         return exclusion_list
 
     @commands.command()
+    @has_permissions(manage_messages=True)
     async def birthday(self, ctx, member: discord.Member):
         """Wish a user a happy birthday!"""
         with open(f'assets/json/server/{str(ctx.guild.id)}/level.json', 'r+') as f:
