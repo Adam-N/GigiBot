@@ -4,145 +4,180 @@ from datetime import datetime
 
 import discord
 from discord.ext import commands
+from discord.utils import get
 
 
 class WishWall(commands.Cog, name='Wishwall'):
     def __init__(self, bot):
         self.bot = bot
+        self.url = 'https://cdn.discordapp.com/attachments/767568459939708950/800966534956318720/destiny_icon_grey.png'
+        self.prefix: str = ''
+
+    @staticmethod
+    async def build_embed(self, old_embed: discord.Embed = None,
+                          author: str = None, platform: str = None, description: str = None,
+                          add: discord.Member = None, remove: discord.Member = None,
+                          error: bool = False, error_type: int = 0):
+        if not error:
+            if old_embed:
+                new_embed = discord.Embed(title=old_embed.title,
+                                          description=old_embed.description,
+                                          color=old_embed.color)
+                new_embed.add_field(name=old_embed.fields[0].name,
+                                    value=old_embed.fields[0].value,
+                                    inline=True)
+                new_embed.set_thumbnail(url=self.url)
+                new_embed.set_footer(text=old_embed.footer.text)
+                new_embed.timestamp = old_embed.timestamp
+                if add:
+                    user_list = old_embed.fields[1].value
+                    if add.mention not in user_list:
+                        user_list = user_list.replace('N/A', '')
+                        user_list += '\n' + str(add.mention)
+                elif remove:
+                    user_list = old_embed.fields[1].value
+                    if remove.mention in user_list:
+                        user_list = user_list.replace(remove.mention, '')
+                        if len(user_list) == 0:
+                            user_list = 'N/A'
+                new_embed.add_field(name=old_embed.fields[1].name,
+                                    value=user_list,
+                                    inline=True)
+            if author and platform and description:
+                new_embed = discord.Embed(title=f'{author} has made a new wish!',
+                                          description=f'\"{description}\"',
+                                          color=0xff0209)
+                new_embed.add_field(name='**Platform:**',
+                                    value=f'{platform}',
+                                    inline=True)
+                new_embed.add_field(name='**Accepted by:**',
+                                    value='N/A',
+                                    inline=True)
+                new_embed.set_thumbnail(url=self.url)
+                new_embed.set_footer(text=f'Created by: {author}')
+                new_embed.timestamp = datetime.utcnow()
+        else:
+            new_embed = discord.Embed(title=f'**Error**',
+                                      color=0xff0209)
+            if error_type == 1:
+                new_embed.description = (f'*Configuration for WishWall is improperly formatted/*\n' +
+                                         f'*missing from file. Please contact staff for assistance.*')
+            elif error_type == 2:
+                new_embed.description = (f'*Missing argument. Please properly format your wish.*\n' +
+                                         f'***{self.prefix}wish <__platform__> <description>***')
+            elif error_type == 3:
+                new_embed.description = (f'*Missing argument. Please properly format your wish.*\n' +
+                                         f'***{self.prefix}wish <platform> <__description__>***')
+            else:
+                new_embed.description = (f'*An unspecified error has occured while executing command.*\n' +
+                                         f'*Please contact staff for assistance.*')
+        return new_embed
+
+    @staticmethod
+    async def build_embed_reacts(self, message, config):
+        if message.reactions:
+            for react in message.reactions:
+                async for user in react.users():
+                    if not user == self.bot.user:
+                        await react.remove(user)
+        else:
+            await discord.Message.add_reaction(message, config['accept_emoji'])
+            await discord.Message.add_reaction(message, config['un-accept_emoji'])
 
     @commands.command(name='wish')
-    async def commission(self, ctx, *args):
-        """Use this in the WishWall channel to issue a wish!"""
+    async def wish(self, ctx, platform: str = None, *args):
+        """Use this in the WishWall channel to make a wish!"""
+        self.prefix = ctx.prefix
+        guild = ctx.guild.id
+        channel = await self.bot.fetch_channel(ctx.channel.id)
+        author = ctx.message.author
+        ps_emote = get(ctx.message.guild.emojis, name='ps4')
+        xb_emote = get(ctx.message.guild.emojis, name='xbox')
+        pc_emote = get(ctx.message.guild.emojis, name='pc')
+        alias_list = {f'{ps_emote} Playstation': {'playstation', 'ps'},
+                      f'{xb_emote} Xbox': {'xbox', 'xb'},
+                      f'{pc_emote} Steam': {'pc', 'steam'}}
+        if platform:
+            for alias in alias_list:
+                if platform.lower() in alias_list[alias]:
+                    platform = alias
+                    break
+            if platform not in alias_list.keys():
+                platform = None
+        wish_desc = ' '.join(args)
         with open('assets/json/config.json', 'r') as f:
             config = json.load(f)
-        wish = ' '.join(args)
-        if str(ctx.channel.id) == config[str(ctx.guild.id)]['wishwall']:
-            if len(wish) == 0:
-                new_embed = discord.Embed(title="Error",
-                                          description=f"*Please include a full description of your request.*\n"
-                                          f"***{ctx.prefix}wish <wish>***",
-                                          color=0xff0209)
+        try:
+            config = config[str(guild)]['wishwall']
+        except KeyError:
+            await channel.send(embed=(await self.build_embed(self, error=True, error_type=1)))
+            return
+        if channel.id == config['channel']:
+            if author.nick:
+                wish_owner = str(author.nick)
             else:
-                if ctx.message.author.nick:
-                    comm_author = str(ctx.message.author.nick)
-                else:
-                    comm_author = str(ctx.message.author)[:-5]
-                new_embed = discord.Embed(title="__**{}**__ *has made a new wish!*".format(comm_author),
-                                          description="{}".format(wish),
-                                          color=0xff0209)
-                new_embed.set_thumbnail(
-                    url="https://media.discordapp.net/attachments/767568459939708950/800966534956318720/destiny_icon_grey.png?width=630&height=670")
-                new_embed.add_field(name="**Accepted by:**",
-                                    value="N/A",
-                                    inline=True)
-                new_embed.set_footer(text="Created by: {}".format(ctx.message.author))
-                new_embed.timestamp = datetime.utcnow()
-            await ctx.channel.send(embed=new_embed)
+                wish_owner = str(author)[:-5]
+            if not platform:
+                await channel.send(embed=(await self.build_embed(self, error=True, error_type=2)))
+            elif len(wish_desc) == 0:
+                await channel.send(embed=(await self.build_embed(self, error=True, error_type=3)))
+            else:
+                await channel.send(
+                    embed=(await self.build_embed(self, author=wish_owner, platform=platform, description=wish_desc)))
 
     @commands.Cog.listener()
-    async def on_message(self, message):
+    async def on_message(self, ctx):
+        guild = ctx.guild.id
+        channel = await self.bot.fetch_channel(ctx.channel.id)
+        message = ctx
+        author = message.author
         with open('assets/json/config.json', 'r') as f:
             config = json.load(f)
-        user = await self.bot.fetch_user(message.author.id)
-        if str(message.channel.id) in config[str(message.guild.id)]['wishwall']:
-            if str(user.id) in config[str(message.guild.id)]['gigiid']:
-                try:
+        try:
+            config = config[str(guild)]['wishwall']
+        except KeyError:
+            await channel.send(embed=(await self.build_embed(self, error=True, error_type=1)))
+            return
+        if channel.id == int(config['channel']):
+            if author == self.bot.user:
+                if message.embeds:
                     if 'Error' in str(message.embeds[0].title):
-                        await asyncio.sleep(3)
+                        await asyncio.sleep(4)
                         await discord.Message.delete(message)
-                    else:
-                        reactions = ['\U00002705', '\U0000274E']
-                        for emoji in reactions:
-                            await discord.Message.add_reaction(message, emoji)
-                except Exception:
-                    pass
-            elif 'commission' in str(message.content[:12]):
+                        return
+                    await self.build_embed_reacts(self, message, config)
+            """elif author.permissions_in(channel).manage_messages and not author.bot and f'{self.prefix}comm' not in str(
+                    message.content)[:6]:
+                return
+            else:"""
+            if author != self.bot.user:
                 await discord.Message.delete(message)
-        elif str(message.channel.id) == config[str(message.guild.id)]['wishwall']:
-            await discord.Message.delete(message)
 
     @commands.Cog.listener()
-    async def on_raw_reaction_add(self, payload):
-
+    async def on_raw_reaction_add(self, ctx):
+        payload = ctx
+        guild = payload.guild_id
+        channel = await self.bot.fetch_channel(payload.channel_id)
+        message = await channel.fetch_message(payload.message_id)
+        member = await channel.guild.fetch_member(payload.user_id)
         with open('assets/json/config.json', 'r') as f:
             config = json.load(f)
-        channel = await self.bot.fetch_channel(payload.channel_id)
-        member = channel.guild.get_member(payload.user_id)
-        message = await channel.fetch_message(payload.message_id)
-        wish_channel = await self.bot.fetch_channel(int(config[str(payload.guild_id)]['wishwall']))
-        if wish_channel.id == channel.id:
-            try:
-                old_embed = message.embeds[0]
-            except IndexError:
-                old_embed = discord.Embed()
-            if old_embed.footer:
-                comm_owner = old_embed.footer.text[12:]
-            if str(channel.id) in config[str(payload.guild_id)]['wishwall'] and not member.bot:
-                if payload.emoji.name == '✅':
-                    if not (member.name + '#' + member.discriminator) == comm_owner and not member.bot:
-                        for i, field in enumerate(old_embed.fields):
-                            new_embed = discord.Embed(title=old_embed.title,
-                                                      description=old_embed.description,
-                                                      color=old_embed.color,
-                                                      timestamp=old_embed.timestamp)
-                            new_embed.set_thumbnail(
-                                url="https://media.discordapp.net/attachments/767568459939708950/800966534956318720/destiny_icon_grey.png?width=630&height=670")
-                            new_embed.set_footer(text=old_embed.footer.text)
-                            for react in message.reactions:
-
-                                async for user in react.users():
-                                    if react.emoji == '✅' and not user.bot:
-                                        if field.value == 'N/A':
-                                            field.value = str(user.mention) + '\n'
-                                        elif user.mention not in field.value:
-                                            field.value = field.value + '\n' + str(user.mention)
-                                        else:
-                                            new_embed = discord.Embed(title="Error",
-                                                                      description="*You already accepted this Wish.*",
-                                                                      color=0xff0209)
-                                            await channel.send(embed=new_embed)
-                            new_embed.add_field(name=field.name,
-                                                value=field.value,
-                                                inline=True)
-                        await message.edit(embed=new_embed)
-                    else:
-                        new_embed = discord.Embed(title="Error",
-                                                  description="*You cannot accept your own Wish.*",
-                                                  color=0xff0209)
-                        await channel.send(embed=new_embed)
-                elif payload.emoji.name == '❎':
-                    if str(member.name) in comm_owner:
-                        await discord.Message.delete(message)
-                    else:
-                        if member.permissions_in(wish_channel).manage_messages and not member.bot:
-                            await discord.Message.delete(message)
-                            return
-
-                        for i, field in enumerate(old_embed.fields):
-                            new_embed = discord.Embed(title=old_embed.title,
-                                                      description=old_embed.description,
-                                                      color=old_embed.color,
-                                                      timestamp=old_embed.timestamp)
-                            field.value = field.value.replace(str(member.mention), '')
-                            try:
-                                field.value = field.value.replace('\n\n', '\n')
-                            finally:
-                                if field.value == '':
-                                    field.value = 'N/A'
-                                new_embed.add_field(name=field.name,
-                                                    value=field.value,
-                                                    inline=True)
-                                new_embed.set_thumbnail(
-                                    url="https://media.discordapp.net/attachments/767568459939708950/800966534956318720/destiny_icon_grey.png?width=630&height=670")
-                                new_embed.set_footer(text=old_embed.footer.text)
-                                await message.edit(embed=new_embed)
-            try:
-                for react in message.reactions:
-                    async for user in react.users():
-                        if not user.bot:
-                            await react.remove(user)
-            finally:
+        try:
+            config = config[str(guild)]['wishwall']
+        except KeyError:
+            await channel.send(embed=(await self.build_embed(self, error=True, error_type=1)))
+            return
+        if channel.id == config['channel'] and message.author == self.bot.user and not member == self.bot.user and \
+                message.embeds[0]:
+            if member.name not in message.embeds[0].footer.text:
+                if str(payload.emoji) == config['accept_emoji']:
+                    await message.edit(embed=(await self.build_embed(self, old_embed=message.embeds[0], add=member)))
+                elif str(payload.emoji) == config['un-accept_emoji']:
+                    await message.edit(embed=(await self.build_embed(self, old_embed=message.embeds[0], remove=member)))
+            elif member.name in message.embeds[0].footer.text and str(payload.emoji) == config['un-accept_emoji']:
+                await discord.Message.delete(message)
                 return
+            await self.build_embed_reacts(self, message, config)
 
 
 def setup(bot):

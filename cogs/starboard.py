@@ -172,68 +172,6 @@ class StarboardCog(commands.Cog, name='starboard'):
     async def sb_settings(self, ctx):
         await ctx.send("channel; star_emoji; count; conf_emoji")
 
-    @commands.command(aliases=['setsb', 'changesb', 'change_sb'])
-    @commands.has_guild_permissions(administrator=True)
-    async def set_sb(self, ctx, setting: str, value: str):
-        if os.path.isfile('assets/json/config.json'):
-            with open('assets/json/config.json', 'r') as f:
-                config = json.load(f)
-        else:
-            config = {}
-        setting = setting.lower()
-        if setting == "channel" or setting == "star_emoji" or setting == "count" or setting == "conf_emoji":
-
-            try:
-                config[str(ctx.message.guild.id)]['starboard'][setting] = value
-            except KeyError:
-                config[str(ctx.message.guild.id)]['starboard'] = {}
-                config[str(ctx.message.guild.id)]['starboard'][setting] = value
-
-            with open('assets/json/config.json', 'w') as f:
-                json.dump(config, f)
-            await ctx.send(f'Completed. {setting} is now {value}')
-        else:
-            await ctx.send(f'Something went wrong. {setting} was incorrect and {value} was not assigned')
-
-    @commands.command(name="create", hidden=True, pass_context=True, aliases=['new', 'make', 'bind'])
-    @commands.has_guild_permissions(administrator=True)
-    async def create(self, ctx, channel: discord.TextChannel):
-        """creates a starboard for this guild"""
-
-        if not os.path.isfile('assets/json/config.json'):
-                # if the file doesn't exist, it gives default values to all of the settings.
-                config = {}
-                config[str(ctx.message.guild.id)] = {}
-                config[str(ctx.message.guild.id)]['starboard'] = {}
-                config[str(ctx.message.guild.id)]['starboard']['channel'] = channel.id
-                config[str(ctx.message.guild.id)]['starboard']["star_emoji"] = "\u2b50"
-                config[str(ctx.message.guild.id)]['starboard']["count"] = 3
-                config[str(ctx.message.guild.id)]['starboard']["conf_emoji"] = "\u2705"
-
-                with open('assets/json/config.json', 'w') as f:
-                    json.dump(config, f)
-        elif os.path.isfile('assets/json/config.json'):
-            with open('assets/json/config.json', 'r') as f:
-                config = json.load(f)
-            try:
-                if config[str(ctx.message.guild.id)]['starboard']:
-                    await ctx.send(content=None, embed=self.get_error_embed(ctx, "StarboardAlreadyExists"))
-                    return
-            except KeyError:
-                config[str(ctx.message.guild.id)]['starboard'] = {}
-                config[str(ctx.message.guild.id)]['starboard']['channel'] = channel.id
-                config[str(ctx.message.guild.id)]['starboard']["star_emoji"] = "\u2b50"
-                config[str(ctx.message.guild.id)]['starboard']["count"] = 3
-                config[str(ctx.message.guild.id)]['starboard']["conf_emoji"] = "\u2705"
-
-            with open('assets/json/config.json', "w") as f:
-                json.dump(config, f)
-
-        else:
-            await ctx.send("something went wrong, starboard could not be created")
-
-        await ctx.send(content=None, embed=self.get_success_embed(ctx, "StarboardCreated"))
-
 
 def setup(bot):
     bot.add_cog(StarboardCog(bot))

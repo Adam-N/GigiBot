@@ -1,6 +1,7 @@
 import json
 import os
 
+import discord
 from discord.ext import commands
 
 
@@ -96,6 +97,100 @@ class OwnerCog(commands.Cog, name='owner'):
     @commands.is_owner()
     async def shutdown(self, ctx):
         await ctx.bot.logout()
+
+    @commands.command(aliases=['changesettings', 'change_settings'])
+    @commands.has_guild_permissions(administrator=True)
+    async def config(self, ctx, board:str, setting: str, value: str):
+        if os.path.isfile('assets/json/config.json'):
+            with open('assets/json/config.json', 'r') as f:
+                config = json.load(f)
+        else:
+            config = {}
+        setting = setting.lower()
+        board = board.lower()
+
+        if board != 'starboard' and board != 'wishwall' and board != 'ironworks':
+            ctx.send('First argument should be starboard, wishwall or ironworks')
+            return
+
+        if setting in ["star_emoji", "count", "conf_emoji"] and board != 'starboard':
+            ctx.send(f'{setting} is only available in starboard. It was used with {board}')
+            return
+
+        if setting in ["un-accept_emoji", "accept_emoji"] and board not in ['wishwall', 'ironworks']:
+            ctx.send(f'{setting} is only available in wishwall or starboard. It was used with {board}')
+            return
+
+        try:
+            config[str(ctx.message.guild.id)][board][setting] = value
+        except KeyError:
+            ctx.send(f'Appears something went wrong. Did you create {board} first?')
+
+        with open('assets/json/config.json', 'w') as f:
+            json.dump(config, f)
+        await ctx.send(f'Completed. {setting} is now {value}')
+
+
+    @commands.command(name="create", hidden=True, pass_context=True, aliases=['new', 'make', 'bind'])
+    @commands.has_guild_permissions(administrator=True)
+    async def create(self, ctx,board: str, channel: discord.TextChannel):
+        """creates a starboard for this guild"""
+        board = board.lower()
+
+        if board != 'starboard' and board != 'wishwall' and board != 'ironworks':
+            ctx.send('First argument should be starboard, wishwall or ironworks')
+            return
+
+        if not os.path.isfile('assets/json/config.json'):
+            # if the file doesn't exist, it gives default values to all of the settings.
+            if board == 'starboard':
+                config = {}
+                config[str(ctx.message.guild.id)] = {}
+                config[str(ctx.message.guild.id)][board] = {}
+                config[str(ctx.message.guild.id)][board]['channel'] = channel.id
+                config[str(ctx.message.guild.id)][board]["star_emoji"] = "\u2b50"
+                config[str(ctx.message.guild.id)][board]["count"] = 3
+                config[str(ctx.message.guild.id)][board]["conf_emoji"] = "\u2705"
+
+            elif board == 'wishwall' or board == 'ironworks':
+                config = {}
+                config[str(ctx.message.guild.id)] = {}
+                config[str(ctx.message.guild.id)][board] = {}
+                config[str(ctx.message.guild.id)][board]['channel'] = channel.id
+                config[str(ctx.message.guild.id)][board]["accept_emoji"] = "\u2705"
+                config[str(ctx.message.guild.id)][board]["un-accept_emoji"] = "\u274E"
+
+            with open('assets/json/config.json', 'w') as f:
+                json.dump(config, f)
+
+        elif os.path.isfile('assets/json/config.json'):
+            with open('assets/json/config.json', 'r') as f:
+                config = json.load(f)
+            try:
+                if config[str(ctx.message.guild.id)][board]:
+                    await ctx.send(f"{board} AlreadyExists")
+                    return
+            except KeyError:
+                if board == "starboard":
+                    config[str(ctx.message.guild.id)][board] = {}
+                    config[str(ctx.message.guild.id)][board]['channel'] = channel.id
+                    config[str(ctx.message.guild.id)][board]["star_emoji"] = "\u2b50"
+                    config[str(ctx.message.guild.id)][board]["count"] = 3
+                    config[str(ctx.message.guild.id)][board]["conf_emoji"] = "\u2705"
+
+                elif board == 'wishwall' or board == 'ironworks':
+                    config[str(ctx.message.guild.id)][board] = {}
+                    config[str(ctx.message.guild.id)][board]['channel'] = channel.id
+                    config[str(ctx.message.guild.id)][board]["accept_emoji"] = "\u2705"
+                    config[str(ctx.message.guild.id)][board]["un-accept_emoji"] = "\u274E"
+
+            with open('assets/json/config.json', "w") as f:
+                json.dump(config, f)
+
+        else:
+            await ctx.send("Something went wrong, starboard could not be created")
+
+        await ctx.send(f"{board} Created")
 
 def setup(bot):
     bot.add_cog(OwnerCog(bot))
