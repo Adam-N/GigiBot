@@ -107,8 +107,8 @@ class TriumphantCog(commands.Cog, name='Triumphant'):
                 embed.set_image(url=message.attachments[0].url)
             embed.add_field(name='Nominated by:', value=f'{payload.member.name}')
             await posting_channel.send(embed=embed)
-            if os.path.isfile(f'server/{guild.id}/triumphant.json'):
-                with open(f'server/{guild.id}/triumphant.json', 'r') as f:
+            if os.path.isfile(f'assets/json/server/{guild.id}/triumphant.json'):
+                with open(f'assets/json/server/{guild.id}/triumphant.json', 'r') as f:
                     users = json.load(f)
             if not msg.author.bot:
                 users[str(msg.author.id)] = 1
@@ -165,6 +165,7 @@ class TriumphantCog(commands.Cog, name='Triumphant'):
         await ctx.send(embed=add_embed)
 
     @commands.command(hidden=True)
+    @has_permissions(manage_messages=True)
     @commands.is_owner()
     async def triumph_list(self, ctx):
         id_list = ''
@@ -183,6 +184,7 @@ class TriumphantCog(commands.Cog, name='Triumphant'):
         await ctx.send(embed=list_embed)
 
     @commands.command(hidden=True)
+    @has_permissions(manage_messages=True)
     @commands.is_owner()
     async def give_triumphant(self, ctx):
         triumphant_role = discord.utils.get(ctx.author.guild.roles, name="Triumphant/Reward")
@@ -208,7 +210,7 @@ class TriumphantCog(commands.Cog, name='Triumphant'):
         await ctx.send(embed=triumph_embed)
 
     @commands.command(hidden=True)
-    @commands.is_owner()
+    @has_permissions(manage_messages=True)
     async def start_timer(self, ctx):
         self.triumphant_timer.start()
 

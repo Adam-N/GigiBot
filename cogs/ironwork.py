@@ -115,16 +115,11 @@ class IronWorks(commands.Cog, name='IronWorks'):
             if author == self.bot.user:
                 if message.embeds:
                     if 'Error' in str(message.embeds[0].title):
-                        await asyncio.sleep(3)
+                        await asyncio.sleep(4)
                         await discord.Message.delete(message)
                         return
                     await self.build_embed_reacts(self, message, config)
-            """elif author.permissions_in(channel).manage_messages and not author.bot and f'{self.prefix}comm' not in str(
-                    message.content)[:6]:
-                return
             else:
-                await discord.Message.delete(message)"""
-            if author != self.bot.user:
                 await discord.Message.delete(message)
 
     @commands.Cog.listener()

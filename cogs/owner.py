@@ -98,8 +98,8 @@ class OwnerCog(commands.Cog, name='owner'):
     async def shutdown(self, ctx):
         await ctx.bot.logout()
 
-    @commands.command(aliases=['changesettings', 'change_settings'])
-    @commands.has_guild_permissions(administrator=True)
+    @commands.command(hidden= True,aliases=['changesettings', 'change_settings'])
+    @commands.is_owner()
     async def config(self, ctx, board:str, setting: str, value: str):
         if os.path.isfile('assets/json/config.json'):
             with open('assets/json/config.json', 'r') as f:
@@ -132,7 +132,7 @@ class OwnerCog(commands.Cog, name='owner'):
 
 
     @commands.command(name="create", hidden=True, pass_context=True, aliases=['new', 'make', 'bind'])
-    @commands.has_guild_permissions(administrator=True)
+    @commands.is_owner()
     async def create(self, ctx,board: str, channel: discord.TextChannel):
         """creates a starboard for this guild"""
         board = board.lower()

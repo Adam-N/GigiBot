@@ -65,7 +65,7 @@ class LevelCog(commands.Cog, name='Levels'):
         experience = users[str(user.id)]['experience']
         level_dt = 1.75
         lvl_start = users[str(user.id)]['level']
-        lvl_end = int(floor((sqrt(((85 ** level_dt) + (experience ** level_dt))) / (85 ** 85) + 1)))
+        lvl_end = sqrt(((85 ** level_dt) + (experience ** level_dt))) / (85 ** 2) + 1
         top_5_dict = {}
         top_5 = []
         exclusion_list = await self.exlusion_list_generator(self, user)
@@ -97,7 +97,8 @@ class LevelCog(commands.Cog, name='Levels'):
 
         users[str(user.id)]['level'] = lvl_end
 
-        if lvl_end > (int(lvl_start) + 1):
+        if lvl_end >= (int(lvl_start) + 1) and lvl_start > 1:
+
             await user.remove_roles(discord.utils.get(user.guild.roles, name=f"Level {int(lvl_start)}"))
             await user.add_roles(discord.utils.get(user.guild.roles, name=f"Level {int(lvl_end)}"))
 
@@ -118,7 +119,7 @@ class LevelCog(commands.Cog, name='Levels'):
         try:
             with open(f'assets/json/server/{str(ctx.guild.id)}/level.json', 'r') as f:
                 users = json.load(f)
-            lvl = users[str(member.id)]['level']
+            lvl = int(users[str(member.id)]['level'])
             exp = users[str(member.id)]['experience']
             embed = discord.Embed(title='Level {}'.format(int(lvl)), description=f"{exp} XP ",
                                   color=member.top_role.colour)

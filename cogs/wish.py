@@ -7,7 +7,7 @@ from discord.ext import commands
 from discord.utils import get
 
 
-class WishWall(commands.Cog, name='Wishwall'):
+class WishWall(commands.Cog, name='WishWall'):
     def __init__(self, bot):
         self.bot = bot
         self.url = 'https://cdn.discordapp.com/attachments/767568459939708950/800966534956318720/destiny_icon_grey.png'
@@ -110,7 +110,10 @@ class WishWall(commands.Cog, name='Wishwall'):
         try:
             config = config[str(guild)]['wishwall']
         except KeyError:
-            await channel.send(embed=(await self.build_embed(self, error=True, error_type=1)))
+            sent = await channel.send(embed=(await self.build_embed(self, error=True, error_type=1)))
+            await asyncio.sleep(5)
+            print('Deleted Here <-----')
+            await sent.delete()
             return
         if channel.id == config['channel']:
             if author.nick:
@@ -118,9 +121,15 @@ class WishWall(commands.Cog, name='Wishwall'):
             else:
                 wish_owner = str(author)[:-5]
             if not platform:
-                await channel.send(embed=(await self.build_embed(self, error=True, error_type=2)))
+                sent = await channel.send(embed=(await self.build_embed(self, error=True, error_type=2)))
+                await asyncio.sleep(5)
+                print('Deleted Here <-----')
+                await sent.delete()
             elif len(wish_desc) == 0:
-                await channel.send(embed=(await self.build_embed(self, error=True, error_type=3)))
+                sent = await channel.send(embed=(await self.build_embed(self, error=True, error_type=3)))
+                await asyncio.sleep(5)
+                print('Deleted Here <-----')
+                await sent.delete()
             else:
                 await channel.send(
                     embed=(await self.build_embed(self, author=wish_owner, platform=platform, description=wish_desc)))
@@ -136,21 +145,19 @@ class WishWall(commands.Cog, name='Wishwall'):
         try:
             config = config[str(guild)]['wishwall']
         except KeyError:
-            await channel.send(embed=(await self.build_embed(self, error=True, error_type=1)))
+            sent = await channel.send(embed=(await self.build_embed(self, error=True, error_type=1)))
+            await asyncio.sleep(5)
+            print('Deleted Here <-----')
+            await sent.delete()
             return
-        if channel.id == int(config['channel']):
+        if channel.id == config['channel']:
             if author == self.bot.user:
-                if message.embeds:
-                    if 'Error' in str(message.embeds[0].title):
-                        await asyncio.sleep(4)
-                        await discord.Message.delete(message)
-                        return
-                    await self.build_embed_reacts(self, message, config)
-            """elif author.permissions_in(channel).manage_messages and not author.bot and f'{self.prefix}comm' not in str(
-                    message.content)[:6]:
-                return
-            else:"""
-            if author != self.bot.user:
+                await self.build_embed_reacts(self, message, config)
+            elif author != self.bot.user:
+                print('===============[ author != self.bot.user ]===============')
+                print('author = ' + str(author))
+                print('self.bot.user = ' + str(self.bot.user))
+                print('===============[ Message Deleted ]===============')
                 await discord.Message.delete(message)
 
     @commands.Cog.listener()
@@ -165,7 +172,10 @@ class WishWall(commands.Cog, name='Wishwall'):
         try:
             config = config[str(guild)]['wishwall']
         except KeyError:
-            await channel.send(embed=(await self.build_embed(self, error=True, error_type=1)))
+            sent = await channel.send(embed=(await self.build_embed(self, error=True, error_type=1)))
+            await asyncio.sleep(5)
+            print('Deleted Here <-----')
+            await sent.delete()
             return
         if channel.id == config['channel'] and message.author == self.bot.user and not member == self.bot.user and \
                 message.embeds[0]:
@@ -174,9 +184,16 @@ class WishWall(commands.Cog, name='Wishwall'):
                     await message.edit(embed=(await self.build_embed(self, old_embed=message.embeds[0], add=member)))
                 elif str(payload.emoji) == config['un-accept_emoji']:
                     await message.edit(embed=(await self.build_embed(self, old_embed=message.embeds[0], remove=member)))
-            elif member.name in message.embeds[0].footer.text and str(payload.emoji) == config['un-accept_emoji']:
-                await discord.Message.delete(message)
-                return
+            elif member.name in message.embeds[0].footer.text:
+                if str(payload.emoji) == config['un-accept_emoji']:
+                    print('===============[ member.name & payload.emoji ]===============')
+                    print('member.name = ' + str(member.name))
+                    print('message.embeds[0].footer.text = ' + str(message.embeds[0].footer.text))
+                    print('payload.emoji = ' + str(payload.emoji))
+                    print('config[\'un-accept_emoji\'] = ' + str(config['un-accept_emoji']))
+                    print('===============[ Message Deleted ]===============')
+                    await discord.Message.delete(message)
+                    return
             await self.build_embed_reacts(self, message, config)
 
 
