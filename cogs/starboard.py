@@ -140,7 +140,7 @@ class StarboardCog(commands.Cog, name='starboard'):
     async def starboard(self, ctx):
         pass
 
-    @commands.command(name="settings", hidden=False, pass_context=True, aliases=['information', 'info'])
+    @commands.command(name="settings", hidden=True, pass_context=True, aliases=['information', 'info'])
     async def settings(self, ctx):
         """returns the starboard's current settings"""
 
@@ -167,7 +167,7 @@ class StarboardCog(commands.Cog, name='starboard'):
             await ctx.send(content=None, embed=self.get_error_embed(ctx, "StarboardNotExist"))
 
 
-    @commands.command()
+    @commands.command(hidden=True)
     @commands.has_guild_permissions(administrator=True)
     async def sb_settings(self, ctx):
         await ctx.send("channel; star_emoji; count; conf_emoji")

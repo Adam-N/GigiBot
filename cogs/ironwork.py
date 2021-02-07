@@ -52,13 +52,13 @@ class IronWorks(commands.Cog, name='IronWorks'):
             new_embed = discord.Embed(title=f'**Error**',
                                       color=0xff0209)
             if error_type == 1:
-                new_embed.description = (f'*Configuration for IronWorks is improperly formatted/*\n' +
-                                         f'*missing from file. Please contact staff for assisstance.*')
+                new_embed.description = (f'Configuration for IronWorks is missing or unformatted.\n' +
+                                         f'*Please contact staff for assisstance.*')
             elif error_type == 2:
-                new_embed.description = (f'*Please include a full description of your request.*\n' +
-                                         f'***{self.prefix}commission <description>***')
+                new_embed.description = (f'Please include a full description of your request.\n' +
+                                         f'*{self.prefix}commission* ***<__description__>***')
             else:
-                new_embed.description = (f'*An unspecified error has occured while executing command.*\n' +
+                new_embed.description = (f'An unspecified error has occured while executing command.\n' +
                                          f'*Please contact staff for assistance.*')
         return new_embed
 
@@ -86,7 +86,9 @@ class IronWorks(commands.Cog, name='IronWorks'):
         try:
             config = config[str(guild)]['ironworks']
         except KeyError:
-            await channel.send(embed=(await self.build_embed(self, error=True, error_type=1)))
+            sent = await channel.send(embed=(await self.build_embed(self, error=True, error_type=1)))
+            await asyncio.sleep(5)
+            await sent.delete()
             return
         if channel.id == config['channel']:
             if author.nick:
@@ -94,7 +96,9 @@ class IronWorks(commands.Cog, name='IronWorks'):
             else:
                 comm_owner = str(author)[:-5]
             if len(comm_desc) == 0:
-                await channel.send(embed=(await self.build_embed(self, error=True, error_type=2)))
+                sent = await channel.send(embed=(await self.build_embed(self, error=True, error_type=2)))
+                await asyncio.sleep(5)
+                await sent.delete()
             else:
                 await channel.send(embed=(await self.build_embed(self, author=comm_owner, description=comm_desc)))
 
@@ -109,18 +113,20 @@ class IronWorks(commands.Cog, name='IronWorks'):
         try:
             config = config[str(guild)]['ironworks']
         except KeyError:
-            await channel.send(embed=(await self.build_embed(self, error=True, error_type=1)))
+            sent = await channel.send(embed=(await self.build_embed(self, error=True, error_type=1)))
+            await asyncio.sleep(5)
+            await sent.delete()
             return
-        if channel.id == int(config['channel']):
+        if channel.id == config['channel']:
             if author == self.bot.user:
-                if message.embeds:
-                    if 'Error' in str(message.embeds[0].title):
-                        await asyncio.sleep(4)
-                        await discord.Message.delete(message)
-                        return
-                    await self.build_embed_reacts(self, message, config)
-            else:
-                await discord.Message.delete(message)
+                if 'Error' in message.embeds[0].title:
+                    return
+                await self.build_embed_reacts(self, message, config)
+                return
+            elif author.permissions_in(channel).manage_messages and author != self.bot.user:
+                if f'{self.prefix}comm' not in str(message.content)[:6]:
+                    return
+            await discord.Message.delete(message)
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, ctx):
@@ -134,18 +140,25 @@ class IronWorks(commands.Cog, name='IronWorks'):
         try:
             config = config[str(guild)]['ironworks']
         except KeyError:
-            await channel.send(embed=(await self.build_embed(self, error=True, error_type=1)))
+            sent = await channel.send(embed=(await self.build_embed(self, error=True, error_type=1)))
+            await asyncio.sleep(5)
+            await sent.delete()
             return
-        if channel.id == int(config['channel']) and message.author == self.bot.user and not member == self.bot.user and \
+        if channel.id == config['channel'] and message.author == self.bot.user and not member == self.bot.user and \
                 message.embeds[0]:
-            if member.name not in message.embeds[0].footer.text:
+            comm_owner = message.embeds[0].footer.text
+            react_user = member.name
+            if member.nick:
+                react_user = member.nick
+            if react_user not in comm_owner:
                 if str(payload.emoji) == config['accept_emoji']:
                     await message.edit(embed=(await self.build_embed(self, old_embed=message.embeds[0], add=member)))
                 elif str(payload.emoji) == config['un-accept_emoji']:
                     await message.edit(embed=(await self.build_embed(self, old_embed=message.embeds[0], remove=member)))
-            elif member.name in message.embeds[0].footer.text and str(payload.emoji) == config['un-accept_emoji']:
-                await discord.Message.delete(message)
-                return
+            elif react_user in message.embeds[0].footer.text:
+                if str(payload.emoji) == config['un-accept_emoji']:
+                    await discord.Message.delete(message)
+                    return
             await self.build_embed_reacts(self, message, config)
 
 

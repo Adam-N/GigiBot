@@ -44,6 +44,7 @@ class MembersCog(commands.Cog, name='members'):
         await ctx.send(content=None, embed=embed)
 
     @commands.command(hidden=True)
+    @commands.guild_only()
     async def check(self, ctx, member: discord.Member = None):
         if member is None:
             member = ctx.author
@@ -59,13 +60,10 @@ class MembersCog(commands.Cog, name='members'):
         await ctx.send(embed=embed)
 
     @commands.command(hidden=True)
-    async def role_number(self, ctx, *role_name: str):
-        i = 0
-        role_name_joined = " ".join(role_name)
-        role = discord.utils.get(ctx.message.guild.roles, name=role_name_joined)
-
-        embed = discord.Embed(title=f"{i} people in {role}", value=".")
-        await ctx.send(embed=embed)
+    @commands.guild_only()
+    async def role_number(self, ctx, *query: discord.Role):
+        for i, role in enumerate(query):
+            await ctx.send(embed=discord.Embed(title=f'__{str(len(role.members))}__ users in {role.name}'))
 
     @commands.command(name='ping')
     async def ping(self, ctx):

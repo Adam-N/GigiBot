@@ -30,13 +30,14 @@ class Friend(commands.Cog):
 
     @commands.command(aliases = ['hornyjail','nohorny','horny'])
     async def horny_jail(self, ctx):
-        """Sends a nice message to a friend who tells themselves that they suck"""
+        """Someone saying horny things? Send them to horny jail!"""
         images = ["https://media.tenor.com/images/f781d9b1bbc4839dff9ad763c28deb46/tenor.gif",
-                  "https://media1.tenor.com/images/6493bee2be7ae168a5ef7a68cf751868/tenor.gif?itemid=17298755"]
+                  "https://media1.tenor.com/images/6493bee2be7ae168a5ef7a68cf751868/tenor.gif?itemid=17298755",
+                  "https://media.discordapp.net/attachments/767568459939708950/807751886278492170/no_horny.gif"]
         url = random.choice(images)
         embed = discord.Embed(color=0x00ff00)
         embed.title = "You're gross."
-        embed.description = 'This is because we love you'
+        embed.description = 'This is for your own good'
         embed.set_image(url=url)
         await ctx.channel.send(embed=embed)
 

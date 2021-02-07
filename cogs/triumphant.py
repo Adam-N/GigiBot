@@ -84,8 +84,7 @@ class TriumphantCog(commands.Cog, name='Triumphant'):
             if id_list:
                 name_string = "\n".join(name_list)
                 id_string = "\n".join(id_list)
-                print(f"1 {id_string}")
-                print(f"2 {name_string}")
+
                 embed.add_field(name="People mentioned in the message:", value=name_string)
                 embed.add_field(name="IDs:", value=id_string)
             if not msg.author.bot:
@@ -166,7 +165,6 @@ class TriumphantCog(commands.Cog, name='Triumphant'):
 
     @commands.command(hidden=True)
     @has_permissions(manage_messages=True)
-    @commands.is_owner()
     async def triumph_list(self, ctx):
         id_list = ''
         user_list = ''
@@ -185,13 +183,15 @@ class TriumphantCog(commands.Cog, name='Triumphant'):
 
     @commands.command(hidden=True)
     @has_permissions(manage_messages=True)
-    @commands.is_owner()
     async def give_triumphant(self, ctx):
-        triumphant_role = discord.utils.get(ctx.author.guild.roles, name="Triumphant/Reward")
+        with open(f'assets/json/config.json', 'r') as f:
+            config = json.load(f)
+        triumphant_role = ctx.guild.get_role(int(config[str(ctx.guild.id)]['triumphrole']))
+
         current_triumphant = list(triumphant_role.members)
         member_list = ""
 
-        with open(f'assets/json/server/{ctx.guild.id}/triumphant.json', 'r') as f:
+        with open(f'assets/json/server/{ctx.guild.id}/triumphant_copy.json', 'r') as f:
             users = json.load(f)
 
         for member in current_triumphant:
@@ -201,41 +201,37 @@ class TriumphantCog(commands.Cog, name='Triumphant'):
             user = ctx.channel.guild.get_member(user_id=int(key))
             member_list = member_list + user.name + '\n'
             await user.add_roles(triumphant_role)
-
-        os.remove(f'assets/json/server/{ctx.guild.id}/triumphant.json')
+        os.remove(f'assets/json/server/{ctx.guild.id}/triumphant_copy.json')
 
         triumph_embed = discord.Embed(title="Triumphant Role Success",
                                       description="These users have received their role.")
         triumph_embed.add_field(name="Users:", value=f"{member_list}")
         await ctx.send(embed=triumph_embed)
 
-    @commands.command(hidden=True)
-    @has_permissions(manage_messages=True)
-    async def start_timer(self, ctx):
-        self.triumphant_timer.start()
+    @staticmethod
+    async def triumphant_reset(self, server):
+        with open('assets/json/config.json', 'r') as f:
+            config = json.load(f)
+        chan = self.bot.get_channel(int(config[str(server.id)]['triumphant']))
 
-    @tasks.loop(hours=168)
-    async def triumphant_timer(self):
-        for server in self.bot.guilds:
-            with open('assets/json/config.json', 'r') as f:
-                config = json.load(f)
-            chan = self.bot.get_channel(config[server]['triumphant'])
+        if os.path.isfile(f'assets/json/server/{str(server.id)}/triumphant_copy.json'):
+            os.remove(f'assets/json/server/{str(server.id)}/triumphant_copy.json')
+        with open(f'assets/json/server/{str(server.id)}/triumphant.json', 'r') as f:
+            users = json.load(f)
 
-            await chan.send("\U0001f5d3 Timer Started \U0001f5d3")
+        with open(f'assets/json/server/{str(server.id)}/triumphant_copy.json', 'w') as f:
+            json.dump(users, f)
 
-            if os.path.isfile(f'server/{str(server.id)}/triumphant_copy.json'):
-                os.remove(f'assets/json/server/{str(server.id)}/triumphant_copy.json')
-            with open(f'assets/json/server/{str(server.id)}/triumphant.json', 'r') as f:
-                users = json.load(f)
+        os.remove(f'assets/json/server/{str(server.id)}/triumphant.json')
 
-            with open(f'assets/json/server/{str(server.id)}/triumphant_copy.json', 'w+') as f:
-                json.dump(users, f)
+        triumphant = {}
 
-            os.remove(f'assets/json/server/{str(server.id)}/triumphant.json')
+        with open(f'assets/json/server/{str(server.id)}/triumphant.json', 'w') as f:
+            json.dump(triumphant, f)
 
-            reset_embed = discord.Embed(title="\U0001f5d3| New Week Starts Here. Get that bread!")
+        reset_embed = discord.Embed(title="\U0001f5d3| New Week Starts Here. Get that bread!")
 
-            await chan.send(embed=reset_embed)
+        await chan.send(embed=reset_embed)
 
 
 def setup(bot):

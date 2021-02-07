@@ -345,6 +345,7 @@ class Profile(commands.Cog):
                 wanted_text = profiles[str(member.id)]['WANTEDTEXT']
             except KeyError:
                 wanted_text = 'Shootin\', lootin\' and rootin\' tootin\' degeneracy'
+
             draw.text((35, 275), wanted_text, fill=(32, 32, 32), font=wanted_font)
             buffer_output = io.BytesIO()
             ref_img.save(buffer_output, format='PNG')

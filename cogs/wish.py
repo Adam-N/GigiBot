@@ -60,16 +60,16 @@ class WishWall(commands.Cog, name='WishWall'):
             new_embed = discord.Embed(title=f'**Error**',
                                       color=0xff0209)
             if error_type == 1:
-                new_embed.description = (f'*Configuration for WishWall is improperly formatted/*\n' +
-                                         f'*missing from file. Please contact staff for assistance.*')
+                new_embed.description = (f'Configuration for WishWall is missing or unformatted.\n' +
+                                         f'*Please contact staff for assistance.*')
             elif error_type == 2:
-                new_embed.description = (f'*Missing argument. Please properly format your wish.*\n' +
-                                         f'***{self.prefix}wish <__platform__> <description>***')
+                new_embed.description = (f'Missing argument. Please properly format your wish.\n' +
+                                         f'*{self.prefix}wish* ***<__platform__>*** *<description>*')
             elif error_type == 3:
-                new_embed.description = (f'*Missing argument. Please properly format your wish.*\n' +
-                                         f'***{self.prefix}wish <platform> <__description__>***')
+                new_embed.description = (f'Missing argument. Please properly format your wish.\n' +
+                                         f'*{self.prefix}wish <platform>* ***<__description__>***')
             else:
-                new_embed.description = (f'*An unspecified error has occured while executing command.*\n' +
+                new_embed.description = (f'An unspecified error has occured while executing command.\n' +
                                          f'*Please contact staff for assistance.*')
         return new_embed
 
@@ -112,7 +112,6 @@ class WishWall(commands.Cog, name='WishWall'):
         except KeyError:
             sent = await channel.send(embed=(await self.build_embed(self, error=True, error_type=1)))
             await asyncio.sleep(5)
-            print('Deleted Here <-----')
             await sent.delete()
             return
         if channel.id == config['channel']:
@@ -123,12 +122,10 @@ class WishWall(commands.Cog, name='WishWall'):
             if not platform:
                 sent = await channel.send(embed=(await self.build_embed(self, error=True, error_type=2)))
                 await asyncio.sleep(5)
-                print('Deleted Here <-----')
                 await sent.delete()
             elif len(wish_desc) == 0:
                 sent = await channel.send(embed=(await self.build_embed(self, error=True, error_type=3)))
                 await asyncio.sleep(5)
-                print('Deleted Here <-----')
                 await sent.delete()
             else:
                 await channel.send(
@@ -147,18 +144,18 @@ class WishWall(commands.Cog, name='WishWall'):
         except KeyError:
             sent = await channel.send(embed=(await self.build_embed(self, error=True, error_type=1)))
             await asyncio.sleep(5)
-            print('Deleted Here <-----')
             await sent.delete()
             return
         if channel.id == config['channel']:
             if author == self.bot.user:
+                if 'Error' in message.embeds[0].title:
+                    return
                 await self.build_embed_reacts(self, message, config)
-            elif author != self.bot.user:
-                print('===============[ author != self.bot.user ]===============')
-                print('author = ' + str(author))
-                print('self.bot.user = ' + str(self.bot.user))
-                print('===============[ Message Deleted ]===============')
-                await discord.Message.delete(message)
+                return
+            elif author.permissions_in(channel).manage_messages and author != self.bot.user:
+                if f'{self.prefix}wish' not in str(message.content)[:6]:
+                    return
+            await discord.Message.delete(message)
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, ctx):
@@ -174,24 +171,21 @@ class WishWall(commands.Cog, name='WishWall'):
         except KeyError:
             sent = await channel.send(embed=(await self.build_embed(self, error=True, error_type=1)))
             await asyncio.sleep(5)
-            print('Deleted Here <-----')
             await sent.delete()
             return
         if channel.id == config['channel'] and message.author == self.bot.user and not member == self.bot.user and \
                 message.embeds[0]:
-            if member.name not in message.embeds[0].footer.text:
+            wish_owner = message.embeds[0].footer.text
+            react_user = member.name
+            if member.nick:
+                react_user = member.nick
+            if react_user not in wish_owner:
                 if str(payload.emoji) == config['accept_emoji']:
                     await message.edit(embed=(await self.build_embed(self, old_embed=message.embeds[0], add=member)))
                 elif str(payload.emoji) == config['un-accept_emoji']:
                     await message.edit(embed=(await self.build_embed(self, old_embed=message.embeds[0], remove=member)))
-            elif member.name in message.embeds[0].footer.text:
+            elif react_user in message.embeds[0].footer.text:
                 if str(payload.emoji) == config['un-accept_emoji']:
-                    print('===============[ member.name & payload.emoji ]===============')
-                    print('member.name = ' + str(member.name))
-                    print('message.embeds[0].footer.text = ' + str(message.embeds[0].footer.text))
-                    print('payload.emoji = ' + str(payload.emoji))
-                    print('config[\'un-accept_emoji\'] = ' + str(config['un-accept_emoji']))
-                    print('===============[ Message Deleted ]===============')
                     await discord.Message.delete(message)
                     return
             await self.build_embed_reacts(self, message, config)
