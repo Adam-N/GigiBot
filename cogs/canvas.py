@@ -108,6 +108,59 @@ class Profile(commands.Cog):
                                                description=f"{system} not a valid, found platform or alias."))
             return
 
+    @commands.has_guild_permissions(manage_messages=True)
+    @commands.command(aliases=['staffadd'])
+    async def staffset(self, ctx, user_id: int, system: str, *name: str):
+        """Add your usernames for your game system"""
+        system = system.upper()
+        name_joined = " ".join(name)
+        with open(f'assets/json/server/{str(ctx.guild.id)}/profiles.json', 'r') as f:
+            users = json.load(f)
+        for platform in self.sys_aliases:
+            if system in self.sys_aliases[platform]:
+                if system == 'PS' and len(name_joined) > 16:
+                    await ctx.send(embed=discord.Embed(title='Error',
+                                                       description='PSN names must not exceed 16 characters'))
+                    return
+                if system == 'XB' and len(name_joined) > 16:
+                    await ctx.send(embed=discord.Embed(title='Error',
+                                                       description='GamerTags must not exceed 15 characters'))
+                    return
+                if system == 'STEAM' and len(name_joined) > 32:
+                    await ctx.send(embed=discord.Embed(title='Error',
+                                                       description='Steam usernames must not exceed 32 characters'))
+                    return
+                if system == 'UPLAY' and len(name_joined) > 15:
+                    await ctx.send(embed=discord.Embed(title='Error',
+                                                       description='Uplay usernames must not exceed 12 characters'))
+                    return
+                if system == 'FFXIV' and len(name_joined) > 20:
+                    await ctx.send(embed=discord.Embed(title='Error',
+                                                       description='FFXIV names must not exceed 20 characters'))
+                    return
+                try:
+                    users[str(user_id)][platform] = name_joined
+                except KeyError:
+                    users[str(user_id)] = {}
+                    users[str(user_id)][platform] = name_joined
+                with open(f'assets/json/server/{str(ctx.guild.id)}/profiles.json', 'w') as f:
+                    users[str(user_id)] = self.sort(users[str(user_id)])
+                    json.dump(users, f)
+                user = ctx.guild.get_member(int(user_id))
+                await ctx.send(embed=discord.Embed(title=f"Successfully added to {user.name}'s profile. {platform} ID: {name_joined}"))
+                return
+            elif system == 'STEAMURL':
+                users[str(ctx.author.id)][system] = '<' + name_joined.strip('<>') + '>'
+                with open(f'assets/json/server/{str(ctx.guild.id)}/profiles.json', 'w') as f:
+                    users[str(ctx.author.id)] = self.sort(users[str(ctx.author.id)])
+                    json.dump(users, f)
+                await ctx.send(embed=discord.Embed(title=f"Successfully set your Steam URL to:\n{name_joined}"))
+                return
+        else:
+            await ctx.send(embed=discord.Embed(title='Error',
+                                               description=f"{system} not a valid, found platform or alias."))
+            return
+
     @commands.command()
     async def get(self, ctx, system: str, member: discord.Member = None):
         """Get a users usernames."""

@@ -114,7 +114,7 @@ class WishWall(commands.Cog, name='WishWall'):
             await asyncio.sleep(5)
             await sent.delete()
             return
-        if channel.id == config['channel']:
+        if channel.id == int(config['channel']):
             if author.nick:
                 wish_owner = str(author.nick)
             else:
@@ -146,16 +146,15 @@ class WishWall(commands.Cog, name='WishWall'):
             await asyncio.sleep(5)
             await sent.delete()
             return
-        if channel.id == config['channel']:
-            if author == self.bot.user:
-                if 'Error' in message.embeds[0].title:
+        if channel.id == int(config['channel']):
+            if author != self.bot.user:
+                if author.permissions_in(channel).manage_messages and f'{self.prefix}wish' not in str(message.content)[
+                                                                                                  :6]:
                     return
+                else:
+                    await discord.Message.delete(message)
+            elif author == self.bot.user and 'Error' not in message.embeds[0].title:
                 await self.build_embed_reacts(self, message, config)
-                return
-            elif author.permissions_in(channel).manage_messages and author != self.bot.user:
-                if f'{self.prefix}wish' not in str(message.content)[:6]:
-                    return
-            await discord.Message.delete(message)
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, ctx):
@@ -189,6 +188,7 @@ class WishWall(commands.Cog, name='WishWall'):
                     await discord.Message.delete(message)
                     return
             await self.build_embed_reacts(self, message, config)
+
 
 
 def setup(bot):

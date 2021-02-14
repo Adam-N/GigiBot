@@ -92,7 +92,8 @@ class LevelCog(commands.Cog, name='Levels'):
                 for member in top_5:
                     top_5_user = channel.guild.get_member(user_id=int(member))
                     await top_5_user.add_roles(top_5_role)
-
+        if lvl_end > 5:
+            lvl_end = 5
         users[str(user.id)]['level'] = lvl_end
 
         if lvl_end >= (int(lvl_start) + 1) and lvl_start > 1:
@@ -102,7 +103,7 @@ class LevelCog(commands.Cog, name='Levels'):
             await user.add_roles(discord.utils.get(user.guild.roles, name=f"Level {int(lvl_end)}"))
 
         if lvl_end < 2:
-            for i in range(2, 4):
+            for i in range(2, 5):
                 level_check_role = discord.utils.get(user.guild.roles, name=f"Level {int(i)}")
 
                 if user not in level_check_role.members:
@@ -242,14 +243,12 @@ class LevelCog(commands.Cog, name='Levels'):
             # This checks to see if the user is able to thank.
             # Gives a 24 hour time limit on thanks.
             try:
-                if dt.datetime.utcnow() <= dt.datetime.strptime(
-                        users[str(ctx.author.id)]['thankstamp'],
-                        "%Y-%m-%d %H:%M:%S") + dt.timedelta(hours=24):
-                    day_delay_embed = discord.Embed(title="\U0001f550 You have to wait more than 24 hours to thank "
-                                                          "someone again \U0001f550")
-                    day_delay_embed.set_footer(text='Time until you can thank again ')
-                    day_delay_embed.timestamp = dt.datetime.strptime(users[str(ctx.author.id)]['thankstamp'],
-                                                                     "%Y-%m-%d %H:%M:%S") + dt.timedelta(days=1)
+                if users[str(ctx.author.id)]['thankcheck'] == 1:
+                    tomorrow = dt.datetime.now(dt.timezone.utc)
+                    midnight = dt.datetime.combine(tomorrow, dt.datetime.min.time())
+                    day_delay_embed = discord.Embed(title="\U0001f550 You have to wait until Midnight UTC  \U0001f550")
+                    day_delay_embed.set_footer(text='Thanks reset at midnight UTC. Local time:')
+                    day_delay_embed.timestamp = midnight + dt.timedelta(days=1)
 
                     await ctx.send(embed=day_delay_embed)
                     return
@@ -258,10 +257,10 @@ class LevelCog(commands.Cog, name='Levels'):
                 pass
 
             # Gives the person thanked XP based on their level.
-            if users[str(thankee.id)]['level'] <= 10:
-                experience = 50 + users[str(thankee.id)]['level'] ** 2
-            elif users[str(thankee.id)]['level'] > 10:
-                experience = 150 + users[str(thankee.id)]['level'] ** 1.5
+            if users[str(thankee.id)]['level'] < 2:
+                experience = 50 + users[str(thankee.id)]['level'] * 2
+            elif 2 < users[str(thankee.id)]['level']:
+                experience = 90 + users[str(thankee.id)]['level'] * 4
             else:
                 experience = 50
 
@@ -273,8 +272,7 @@ class LevelCog(commands.Cog, name='Levels'):
             await self.update_data(self, users, ctx.message.author)
 
             # Adds timestamp to be chacked against
-            users[str(ctx.author.id)]['thankstamp'] = str(
-                dt.datetime.strftime(dt.datetime.utcnow(), "%Y-%m-%d %H:%M:%S"))
+            users[str(ctx.author.id)]['thankcheck'] = 1
 
             # Increases various variables, or initializes them if they don't exist.
             try:
@@ -493,14 +491,12 @@ class LevelCog(commands.Cog, name='Levels'):
             config = json.load(f)
         if str(ctx.channel.id) in config[str(ctx.guild.id)]['bot_channel'] or 'bot' in str(ctx.channel.name):
             try:
-                if dt.datetime.utcnow() <= dt.datetime.strptime(
-                        users[str(ctx.author.id)]['daystamp'],
-                        "%Y-%m-%d %H:%M:%S") + dt.timedelta(hours=23):
-                    day_delay_embed = discord.Embed(title="\U0001f550 You have to wait more than 24 hours to use your "
-                                                          "daily again \U0001f550")
-                    day_delay_embed.set_footer(text='Time until you can use your daily bonus again ')
-                    day_delay_embed.timestamp = dt.datetime.strptime(users[str(ctx.author.id)]['daystamp'],
-                                                                     "%Y-%m-%d %H:%M:%S") + dt.timedelta(hours=24)
+                if users[str(ctx.author.id)]['daycheck'] == 1:
+                    tomorrow = dt.datetime.now(dt.timezone.utc)
+                    midnight = dt.datetime.combine(tomorrow, dt.datetime.min.time())
+                    day_delay_embed = discord.Embed(title="\U0001f550 You have to wait until Midnight UTC \U0001f550")
+                    day_delay_embed.set_footer(text='You can thank again tomorrow! Time Resets at: ')
+                    day_delay_embed.timestamp = midnight + dt.timedelta(days=1)
                     await ctx.send(embed=day_delay_embed)
                     return
             except KeyError:
@@ -542,6 +538,7 @@ class LevelCog(commands.Cog, name='Levels'):
                                           description=f"You are on day {users[str(ctx.author.id)]['daycount']}"
                                           f". Keep it up "
                                           f"to get to day 5!  ")
+            users[str(ctx.author.id)]['daycheck'] = 1
             users[str(ctx.author.id)]["daystamp"] = str(
                 dt.datetime.strftime(dt.datetime.utcnow(), "%Y-%m-%d %H:%M:%S"))
             if member.id != ctx.author.id:
@@ -749,14 +746,25 @@ class LevelCog(commands.Cog, name='Levels'):
                 try:
                     if dt.datetime.utcnow() >= dt.datetime.strptime(users[str(member.id)]['bdaystamp'],
                                                                     "%Y-%m-%d %H:%M:%S") + dt.timedelta(
-                        hours=18):
+                                                                    hours=18):
                         await member.remove_roles(birthday_role)
                         chan = self.bot.get_channel(int(config[str(server.id)]['botpost']))
                         await chan.send(f"Removed birthday role from {member.name}")
                 except KeyError:
                     await member.remove_roles(birthday_role)
                     chan = self.bot.get_channel(int(config[str(server.id)]['botpost']))
-                    await chan.send(f"No Timestanp. Removed birthday role from {member.name}")
+                    await chan.send(f"No Timestamp. Removed birthday role from {member.name}")
+
+    async def reset_timers(self, server):
+        with open(f'assets/json/server/{str(server.id)}/level.json', 'r') as f:
+            users = json.load(f)
+
+        for key in users:
+            users[key]['daycheck'] = 0
+            users[key]['thankcheck'] = 0
+
+        with open(f'assets/json/server/{str(server.id)}/level.json', 'w') as f:
+            json.dump(users, f)
 
 
 def setup(bot):

@@ -39,6 +39,7 @@ async def daily():
         with open(f'assets/json/config.json', 'r') as f:
             config = json.load(f)
         await LevelCog.remove_birthday(LevelCog(bot), server)
+        await LevelCog.reset_timers(LevelCog(bot), server)
         channel = bot.get_channel(int(config[str(server.id)]['botpost']))
         await channel.send('Ran Daily Reset')
 
@@ -68,7 +69,7 @@ async def on_ready():
     print(f'\nLogged in as: {bot.user.name} - {bot.user.id}\nVersion: {discord.__version__}')
     print(f'Successfully logged in and booted...!')
     schedule.add_job(daily, 'cron', day='*', hour=23)
-    schedule.add_job(weekly, 'cron', week='*', day_of_week='sun', hour=12)
+    schedule.add_job(weekly, 'cron', week='*', day_of_week='sun', hour=17)
     schedule.add_job(monthly, 'cron', month='*', day='last')
 
     schedule.start()

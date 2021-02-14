@@ -3,6 +3,7 @@ import os
 
 import discord
 from discord.ext import commands
+from collections.abc import Sequence
 
 
 class OwnerCog(commands.Cog, name='owner'):
@@ -65,8 +66,8 @@ class OwnerCog(commands.Cog, name='owner'):
 
         if setting == 'prefix' or setting == "ironwork" or setting == 'wishwall' \
                 or setting == 'gigiid' or setting == 'triumphant' or setting == 'birthday' \
-                or setting == 'welcome' or setting == 'general' or setting == 'toptalker'\
-                or setting == 'topthanks' or setting == 'topthanker' or setting == 'top5'\
+                or setting == 'welcome' or setting == 'general' or setting == 'toptalker' \
+                or setting == 'topthanks' or setting == 'topthanker' or setting == 'top5' \
                 or setting == 'ringleader' or setting == 'mod' or setting == 'botpost' or setting == 'triumphrole':
             try:
                 config[str(ctx.message.guild.id)][setting] = change
@@ -98,9 +99,9 @@ class OwnerCog(commands.Cog, name='owner'):
     async def shutdown(self, ctx):
         await ctx.bot.logout()
 
-    @commands.command(hidden= True,aliases=['changesettings', 'change_settings'])
+    @commands.command(hidden=True, aliases=['changesettings', 'change_settings'])
     @commands.is_owner()
-    async def config(self, ctx, board:str, setting: str, value: str):
+    async def config(self, ctx, board: str, setting: str, value: str):
         if os.path.isfile('assets/json/config.json'):
             with open('assets/json/config.json', 'r') as f:
                 config = json.load(f)
@@ -130,10 +131,9 @@ class OwnerCog(commands.Cog, name='owner'):
             json.dump(config, f)
         await ctx.send(f'Completed. {setting} is now {value}')
 
-
     @commands.command(name="create", hidden=True, pass_context=True, aliases=['new', 'make', 'bind'])
     @commands.is_owner()
-    async def create(self, ctx,board: str, channel: discord.TextChannel):
+    async def create(self, ctx, board: str, channel: discord.TextChannel):
         """creates a starboard for this guild"""
         board = board.lower()
 
@@ -192,6 +192,69 @@ class OwnerCog(commands.Cog, name='owner'):
 
         await ctx.send(f"{board} Created")
 
+    @commands.command(aliases=['setstatus', 'botstatus'])
+    @commands.is_owner()
+    async def status(self, ctx, arg: str, *status: str):
+        with open('assets/json/config.json', 'r') as f:
+            config = json.load(f)
+        if ctx.channel.id in config[str(ctx.message.guild.id)]['bot_channel'] or 'bot' in ctx.channel.name:
+            arg = arg.lower()
+            joined_status = " ".join(status)
+            if arg not in ['playing', 'listening', 'watching']:
+                await ctx.send('Only playing, streaming, listening or watching allowed as activities.', delete_after=5)
+                await ctx.message.delete()
+                return
+            if arg == 'playing':
+                # Setting `Playing ` status
+                await self.bot.change_presence(activity=discord.Game(name=joined_status))
+            # Couldn't get this part to work. Will continue working on it. No the response works, but it doesn't seem
+            # to take it in the last line.
+            """if arg == 'streaming':
+                await ctx.send('What is the url of the stream?', delete_after=10)
+                response = await self.bot.wait_for('message', check=self.message_check(channel=ctx.channel))
+                print(response.content)
+                url_string = str(response.content)
+                # Setting `Streaming ` status
+                await self.bot.change_presence(activity=discord.Streaming(name=joined_status, url=url_string))"""
+            if arg == 'listening':
+                # Setting `Listening ` status
+                await self.bot.change_presence(
+                    activity=discord.Activity(type=discord.ActivityType.listening, name=joined_status))
+            if arg == 'watching':
+                # Setting `Watching ` status
+                await self.bot.change_presence(
+                    activity=discord.Activity(type=discord.ActivityType.watching, name=joined_status))
+            await ctx.send(f'status changed to {arg} {joined_status}')
+
+    def make_sequence(self, seq):
+        if seq is None:
+            return ()
+        if isinstance(seq, Sequence) and not isinstance(seq, str):
+            return seq
+        else:
+            return (seq,)
+
+    def message_check(self, channel=None, author=None, content=None, ignore_bot=True, lower=True):
+        channel = self.make_sequence(channel)
+        author = self.make_sequence(author)
+        content = self.make_sequence(content)
+        if lower:
+            content = tuple(c.lower() for c in content)
+
+        def check(message):
+            if ignore_bot and message.author.bot:
+                return False
+            if channel and message.channel not in channel:
+                return False
+            if author and message.author not in author:
+                return False
+            actual_content = message.content.lower() if lower else message.content
+            if content and actual_content not in content:
+                return False
+            return True
+
+        return check
+
+
 def setup(bot):
     bot.add_cog(OwnerCog(bot))
-

@@ -61,6 +61,8 @@ class WelcomeCog(commands.Cog):
         leave_embed.add_field(name="Joined on:", value=f"{joined}")
 
         mentions = [role.mention for role in member.roles if role.name != '@everyone']
+        if not mentions:
+            mentions = 'N/A'
         leave_embed.add_field(name="Roles:", value=" ".join(mentions))
 
         leave_embed.set_thumbnail(url=member.avatar_url)

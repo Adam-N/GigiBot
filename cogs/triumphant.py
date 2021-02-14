@@ -165,18 +165,24 @@ class TriumphantCog(commands.Cog, name='Triumphant'):
 
     @commands.command(hidden=True)
     @has_permissions(manage_messages=True)
-    async def triumph_list(self, ctx):
+    async def triumph_list(self, ctx, copy:str=None):
         id_list = ''
         user_list = ''
-        with open(f'assets/json/server/{ctx.guild.id}/triumphant.json', 'r') as f:
-            users = json.load(f)
+
+        if copy is None:
+            with open(f'assets/json/server/{ctx.guild.id}/triumphant.json', 'r') as f:
+                users = json.load(f)
+                copy = ""
+        if copy:
+            with open(f'assets/json/server/{ctx.guild.id}/triumphant_copy.json', 'r') as f:
+                users = json.load(f)
 
         for key in users:
             member = await ctx.guild.fetch_member(member_id=int(key))
             user_list = user_list + str(member.name) + " \n"
             id_list = id_list + key + " \n"
 
-        list_embed = discord.Embed(title='Members on the triumphant list')
+        list_embed = discord.Embed(title=f'Members on the triumphant list {copy}')
         list_embed.add_field(name='List:', value=f"{user_list}")
         list_embed.add_field(name="IDs:", value=f"{id_list}")
         await ctx.send(embed=list_embed)
