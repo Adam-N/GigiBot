@@ -64,6 +64,8 @@ class LevelCog(commands.Cog, name='Levels'):
         level_dt = 1.75
         lvl_start = users[str(user.id)]['level']
         lvl_end = sqrt(((85 ** level_dt) + (experience ** level_dt))) / (85 ** 2) + 1
+        if int(lvl_end) > 5:
+            lvl_end = 5
         top_5_dict = {}
         top_5 = []
         exclusion_list = await self.exclusion_list_generator(channel.guild)
@@ -92,25 +94,34 @@ class LevelCog(commands.Cog, name='Levels'):
                 for member in top_5:
                     top_5_user = channel.guild.get_member(user_id=int(member))
                     await top_5_user.add_roles(top_5_role)
-        if lvl_end > 5:
-            lvl_end = 5
+
         users[str(user.id)]['level'] = lvl_end
 
         if lvl_end >= (int(lvl_start) + 1) and lvl_start > 1:
 
             if int(lvl_start) > 1:
-                await user.remove_roles(discord.utils.get(user.guild.roles, name=f"Level {int(lvl_start)}"))
-            await user.add_roles(discord.utils.get(user.guild.roles, name=f"Level {int(lvl_end)}"))
+                try:
+                    await user.remove_roles(discord.utils.get(user.guild.roles, name=f"Level {int(lvl_start)}"))
+                    await user.add_roles(discord.utils.get(user.guild.roles, name=f"Level {int(lvl_end)}"))
+                except discord.errors.Forbidden as f:
+                    # creating/opening a file
+                    f = open("errors.txt", "a")
+
+                    # writing in the file
+                    f.write(str(f))
+
+                    # closing the file
+                    f.close()
 
         if lvl_end < 2:
-            for i in range(2, 5):
-                level_check_role = discord.utils.get(user.guild.roles, name=f"Level {int(i)}")
+                for i in range(2, 5):
+                    level_check_role = discord.utils.get(user.guild.roles, name=f"Level {int(i)}")
 
-                if user not in level_check_role.members:
-                    try:
-                        await user.remove_roles(level_check_role)
-                    except discord.Forbidden:
-                        continue
+                    if user not in level_check_role.members:
+                        try:
+                            await user.remove_roles(level_check_role)
+                        except discord.Forbidden:
+                            continue
 
     @commands.command(aliases=['rank', 'lvl'])
     async def level(self, ctx, member: discord.Member = None):
@@ -310,7 +321,7 @@ class LevelCog(commands.Cog, name='Levels'):
             # Sends information to check if the person thanked levels up
             await self.level_up(self, users, thankee, ctx.channel)
 
-    @commands.command(aliases=['topthank', 'topthanks', 'thankleaders', 'thankleader', 'thankleaderboard'])
+    @commands.command(aliases=['top_thank', 'topthank', 'topthanks', 'thankleaders', 'thankleader', 'thankleaderboard'])
     async def top_thanks(self, ctx, arg: str = None):
         """Gives the leaderboard for number of thanks recieved!"""
         if not os.path.isfile(f'assets/json/server/{str(ctx.guild.id)}/level.json'):
@@ -358,12 +369,15 @@ class LevelCog(commands.Cog, name='Levels'):
             number_list = []
             thank_list = []
             for key in thank_dict_sorted:
-                member_list.append(ctx.guild.get_member(user_id=int(key)).name)
-                number_list.append(str(i))
-                thank_list.append(str(thank_dict_sorted[key]))
-                i += 1
-                if i > 15:
-                    break
+                try:
+                    member_list.append(ctx.guild.get_member(user_id=int(key)).name)
+                    number_list.append(str(i))
+                    thank_list.append(str(thank_dict_sorted[key]))
+                    i += 1
+                    if i > 15:
+                        break
+                except AttributeError:
+                    continue
 
             member_list_for_embed = "\n".join(member_list)
             number_list_for_embed = "\n".join(number_list)
@@ -429,12 +443,15 @@ class LevelCog(commands.Cog, name='Levels'):
 
             # Creates lists that include member names, positional numbers, and experience totals.
             for key in exp_dict_sorted:
-                member_list.append(ctx.guild.get_member(user_id=int(key)).name)
-                number_list.append(str(i))
-                experience_list.append(str(exp_dict_sorted[key]))
-                i += 1
-                if i > 15:
-                    break
+                try:
+                    member_list.append(ctx.guild.get_member(user_id=int(key)).name)
+                    number_list.append(str(i))
+                    experience_list.append(str(exp_dict_sorted[key]))
+                    i += 1
+                    if i > 15:
+                        break
+                except AttributeError:
+                    pass
 
             # Initialize with returns so that each entry goes to a new line.
             number_list_for_embed = '\n'
@@ -765,6 +782,13 @@ class LevelCog(commands.Cog, name='Levels'):
 
         with open(f'assets/json/server/{str(server.id)}/level.json', 'w') as f:
             json.dump(users, f)
+
+    """@commands.Cog.listener()
+    async def on_voice_state_update(self, member, before, after):
+        if before.channel is None and after.channel is not None:
+            for channel in member.guild.channels:
+                if channel.name == 'general':
+                    await channel.send("Howdy")"""
 
 
 def setup(bot):

@@ -23,9 +23,10 @@ def get_prefix(bot, message):
 
 initial_cogs = ['cogs.owner', 'cogs.canvas', 'cogs.friend', 'cogs.ironwork', 'cogs.level', 'cogs.members',
                 'cogs.simple',
-                'cogs.starboard', 'cogs.timer', 'cogs.triumphant', 'cogs.uptime', 'cogs.welcome', 'cogs.wish']
+                'cogs.starboard', 'cogs.timer', 'cogs.triumphant', 'cogs.uptime', 'cogs.welcome']
 intents = discord.Intents.default()
 intents.members = True
+intents.voice_states = True
 bot = commands.Bot(command_prefix=get_prefix, description='A bot designed for GoldxGuns', intents=intents)
 if __name__ == '__main__':
     for extension in initial_cogs:

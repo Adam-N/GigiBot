@@ -192,7 +192,7 @@ class OwnerCog(commands.Cog, name='owner'):
 
         await ctx.send(f"{board} Created")
 
-    @commands.command(aliases=['setstatus', 'botstatus'])
+    @commands.command(aliases=['setstatus', 'botstatus'], hidden=True)
     @commands.is_owner()
     async def status(self, ctx, arg: str, *status: str):
         with open('assets/json/config.json', 'r') as f:
