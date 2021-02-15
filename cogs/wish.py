@@ -84,9 +84,10 @@ class WishWall(commands.Cog, name='WishWall'):
             await discord.Message.add_reaction(message, config['accept_emoji'])
             await discord.Message.add_reaction(message, config['un-accept_emoji'])
 
-    @commands.command(name='wish')
+    @commands.command(name='wish', description="Use to make a wish in #dtg-wishwall")
     async def wish(self, ctx, platform: str = None, *args):
-        """Use this in the WishWall channel to make a wish!"""
+        """This command will allow you to make a wish to the Ahamkara Riven and
+        connect you to guardians looking to fulfill your wish!"""
         self.prefix = ctx.prefix
         guild = ctx.guild.id
         channel = await self.bot.fetch_channel(ctx.channel.id)

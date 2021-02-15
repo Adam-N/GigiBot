@@ -123,9 +123,9 @@ class LevelCog(commands.Cog, name='Levels'):
                         except discord.Forbidden:
                             continue
 
-    @commands.command(aliases=['rank', 'lvl'])
+    @commands.command(aliases=['rank', 'lvl'], description="Returns you or another's current level and XP!")
     async def level(self, ctx, member: discord.Member = None):
-        """This tells you what your current level and experience are. It also has other various traits it tracks"""
+        """This command can be used to find you or a specified user's current level and total XP on the server!"""
         with open('assets/json/config.json', 'r') as f:
             config = json.load(f)
 
@@ -205,10 +205,10 @@ class LevelCog(commands.Cog, name='Levels'):
         elif not os.path.isfile(f'assets/json/server/{str(ctx.guild.id)}/level.json'):
             await ctx.channel.send("File Doesn't Exist")
 
-    @commands.command(aliases=['thanks', 'thankyou'])
+    @commands.command(aliases=['Thanks','Thank', 'thanks', 'thankyou'], description="Use this to thank a user for "
+                                                                                    "something!")
     async def thank(self, ctx, thankee: discord.Member):
-        """Use this to thank another member who helps you with something! Cannot thank yourself or use in bot
-        channels. """
+        """This command is used to thank a user for, well, anything you might want to thank them for! Show your appreciation!"""
         if thankee.bot:
             return
         with open(f'assets/json/config.json', 'r') as f:
@@ -321,9 +321,10 @@ class LevelCog(commands.Cog, name='Levels'):
             # Sends information to check if the person thanked levels up
             await self.level_up(self, users, thankee, ctx.channel)
 
-    @commands.command(aliases=['top_thank', 'topthank', 'topthanks', 'thankleaders', 'thankleader', 'thankleaderboard'])
+    @commands.command(aliases=['top_thank', 'topthank', 'topthanks', 'thankleaders', 'thankleader', 'thankleaderboard'],
+                      description="Show the leaderboard for top user thanks!")
     async def top_thanks(self, ctx, arg: str = None):
-        """Gives the leaderboard for number of thanks recieved!"""
+        """This command will display the leaderboard for user thanks on the server! Who is being the most helpful?"""
         if not os.path.isfile(f'assets/json/server/{str(ctx.guild.id)}/level.json'):
             return
         with open('assets/json/config.json', 'r') as f:
@@ -394,9 +395,9 @@ class LevelCog(commands.Cog, name='Levels'):
             await ctx.send(embed=embed, delete_after=5)
             await ctx.message.delete()
 
-    @commands.command(aliases=['toplevel', 'leaderboard', 'expleader', 'top'])
+    @commands.command(aliases=['toplevel', 'leaderboard', 'expleader', 'top'], description="Show the leaderboard for server level and XP!")
     async def top_level(self, ctx, arg: str = None):
-        """Gives the leaderboard for people with the highest level in the server."""
+        """This command will display the leaderboard for XP across the server! Compete with your friends!"""
         if not os.path.isfile(f'assets/json/server/{str(ctx.guild.id)}/level.json'):
             return
 
@@ -497,7 +498,7 @@ class LevelCog(commands.Cog, name='Levels'):
                         json.dump(users, f)
             await ctx.channel.send('File Created')
 
-    @commands.command()
+    @commands.command(aliases=['Daily'])
     async def daily(self, ctx, member: discord.Member = None):
         """Grants an amount of XP once every 24 hours"""
         if member is None:

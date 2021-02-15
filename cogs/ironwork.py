@@ -73,9 +73,10 @@ class IronWorks(commands.Cog, name='IronWorks'):
             await discord.Message.add_reaction(message, config['accept_emoji'])
             await discord.Message.add_reaction(message, config['un-accept_emoji'])
 
-    @commands.command(aliases=['comm'])
+    @commands.command(aliases=['comm'], description="Use this to commission in #xiv-ironworks")
     async def commission(self, ctx, *args):
-        """Use this in the IronWorks channel to issue a commission!"""
+        """This command allows you to make commissions and connect you to crafters,
+        gatherers, etc. to help complete requests!"""
         self.prefix = ctx.prefix
         guild = ctx.guild.id
         channel = await self.bot.fetch_channel(ctx.channel.id)

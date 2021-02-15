@@ -1,3 +1,5 @@
+import asyncio
+import discord
 from discord.ext import commands
 from discord.ext.buttons import Paginator
 
@@ -18,7 +20,7 @@ class Help(commands.Cog, name='Help'):
         aliases = '|'.join(command.aliases)
         short_invoke = f'[{command.name}|{aliases}]' if command.aliases else f'[{command.name}]'
         full_invoke = command.qualified_name.replace(command.name, "")
-        signature = f'*{ctx.prefix}{full_invoke}{short_invoke}   {command.signature}*'
+        signature = f'{ctx.prefix}{full_invoke}{short_invoke} {command.signature}'
         return signature
 
     @classmethod
@@ -34,31 +36,46 @@ class Help(commands.Cog, name='Help'):
                 continue
         return sorted(filtered, key=lambda x: x.name)
 
-    async def setup_help_page(self, ctx):
-        pages = []
-        for cog in self.bot.cogs:
-            entry = ''
-            cog = self.bot.get_cog(cog)
-            filtered_commands = await self.return_filtered_commands(ctx, cog)
-            if filtered_commands:
-                entry += (
-                    f'\n\n**=====[\t{cog.qualified_name} Commands\t]=====**\n\n'
-                )
-            for command in filtered_commands:
-                description = command.short_doc or command.description
-                signature = self.get_command_signature(command, ctx)
-                entry += (
-                    f'⏺ - [ **__{command.name}__** ]\n{signature}\n*```css\n  {description}```*\n'
-                )
-            pages.append(entry)
-        await Pages(title=f'{self.bot.user.name}\'s Commands', color=0xCE2029, embed=True,
-                    timeout=30, entries=pages, length=2, thumbnail=self.bot.user.avatar_url).start(ctx, 1)
+    async def setup_help_page(self, ctx, command: commands.Command = None):
+        if command:
+            command_title = f'{self.bot.user.name}\'s __{command.qualified_name}__ Command'
+            command_sig = self.get_command_signature(command, ctx)
+            command_desc = f'**Usage:** *`{command_sig}`*\n```css\n{command.short_doc}```'
+            new_embed = discord.Embed(title=command_title, description=command_desc, color=0xCE2029)
+            new_embed.set_thumbnail(url=self.bot.user.avatar_url)
+            sent = await ctx.send(embed=new_embed)
+            await asyncio.sleep(8)
+            await sent.delete()
+        else:
+            pages = []
+            for cog in self.bot.cogs:
+                entry = ''
+                cog = self.bot.get_cog(cog)
+                cog_commands = await self.return_filtered_commands(ctx, cog)
+                if cog_commands:
+                    entry += f'\n\n**=====[\t{cog.qualified_name} Commands\t]=====**\n\n'
+                    for command in cog_commands:
+                        command_desc = command.description or command.short_doc
+                        command_sig = self.get_command_signature(command, ctx)
+                        entry += f'⏺ - [ **__{command.name}__** ]\n y*Usage:  `{command_sig}`*\n*```css\n  {command_desc}```*\n'
+                    pages.append(entry)
+            await Pages(title=f'{self.bot.user.name}\'s Commands', color=0xCE2029, embed=True,
+                        timeout=25, entries=pages, length=1, thumbnail=self.bot.user.avatar_url).start(ctx, 1)
 
     @commands.command(name='help', aliases=['h'], description='Custom Help Command')
-    async def help(self, ctx):
+    async def help(self, ctx, query=None):
         """Displays this command!"""
-        await self.setup_help_page(ctx)
         await ctx.message.delete()
+        if query:
+            try:
+                command = self.bot.get_command(query)
+                await self.setup_help_page(ctx, command)
+            except commands.CommandNotFound:
+                error = await ctx.send(embed=discord.Embed(title='Command not found'))
+                await asyncio.sleep(3)
+                await error.delete()
+        else:
+            await self.setup_help_page(ctx)
 
     def cog_unload(self):
         self.bot.help_command = self._original_help

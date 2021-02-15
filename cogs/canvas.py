@@ -53,9 +53,10 @@ class Profile(commands.Cog):
             json.dump(users, f)
         await ctx.send("Done")
 
-    @commands.command(aliases=['add'])
+    @commands.command(aliases=['add'], description='Use this to set your platform aliases!')
     async def set(self, ctx, system: str, *name: str):
-        """Add your usernames for your game system"""
+        """This command is used to set individual platform aliases/usernames for use with Gigi's profile system. Help
+        your friends find you! """
         system = system.upper()
         name_joined = " ".join(name)
         with open(f'assets/json/server/{str(ctx.guild.id)}/profiles.json', 'r') as f:
@@ -109,7 +110,7 @@ class Profile(commands.Cog):
             return
 
     @commands.has_guild_permissions(manage_messages=True)
-    @commands.command(aliases=['staffadd'])
+    @commands.command(aliases=['staffadd'], hidden= True)
     async def staffset(self, ctx, user_id: int, system: str, *name: str):
         """Add your usernames for your game system"""
         system = system.upper()
@@ -161,9 +162,10 @@ class Profile(commands.Cog):
                                                description=f"{system} not a valid, found platform or alias."))
             return
 
-    @commands.command()
+    @commands.command(description="Use this to retrieve a user's platform alias!")
     async def get(self, ctx, system: str, member: discord.Member = None):
-        """Get a users usernames."""
+        """This command can be used to retrieve the platform
+         username of yourself or another user from their profile page."""
         if member is None:
             member = ctx.author
         system = system.upper()
@@ -195,9 +197,10 @@ class Profile(commands.Cog):
                 return
         await ctx.send(f"Error. {system} not a valid platform or alias.")
 
-    @commands.command()
+    @commands.command(description='This searches for a user by their alias!')
     async def search(self, ctx, query: str = None, exact_match: bool = False):
-        """Search for a user"""
+        """This command searches the profile system and returns the linked discord mention of a user(s), belonging to
+        the searched text. """
         matches = []
         if query:
             with open(f'assets/json/server/{str(ctx.guild.id)}/profiles.json', 'r') as f:
@@ -227,9 +230,10 @@ class Profile(commands.Cog):
             await ctx.send(embed=discord.Embed(title='Please format your search request properly:',
                                                description=f'`{ctx.prefix}search <query> <exact_match=True/False>`'))
 
-    @commands.command(aliases=['del'])
+    @commands.command(aliases=['del'], description='Use this to delete one of your aliases!')
     async def delete(self, ctx, system):
-        """Delete a username"""
+        """This command is used to delete the alias of a specified
+        platfrom from your server profile. Use with caution!"""
         with open(f'assets/json/server/{str(ctx.guild.id)}/profiles.json', 'r') as f:
             users = json.load(f)
         system = system.upper()
@@ -262,9 +266,10 @@ class Profile(commands.Cog):
                                                        description=f'It appears you do not have profile for that platform.'
                                                        f'Make sure you typed it in properly. You used {system}'))
 
-    @commands.command(aliases=['plist'])
+    @commands.command(aliases=['plist'], description="Displays a user's profile in plaintext.")
     async def profile_list(self, ctx, member: discord.Member = None):
-        """Text only profile"""
+        """This command will output the username/aliases of the specified user (or self) in plaintext for easier
+        viewing. """
         if member is None:
             member = ctx.author
         profile = {}
@@ -298,9 +303,11 @@ class Profile(commands.Cog):
             await ctx.send(embed=profile_embed)
             return
 
-    @commands.command(aliases=['card', 'profilecard', 'canvas'])
+    @commands.command(aliases=['card', 'profilecard', 'canvas'], description='This displays your personalized server '
+                                                                             'profile!')
     async def profile(self, ctx, member: discord.Member = None):
-        """Displays your profile card."""
+        """This command, when used, will send your custom server profile card to your channel to be viewed! Show off
+        to your friends! """
         sys_alias = {'PS': "assets/icon/ps_logo.png",
                      'XB': "assets/icon/xb_logo.png",
                      'STEAM': "assets/icon/steam_logo.png",

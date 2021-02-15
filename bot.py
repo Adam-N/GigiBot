@@ -21,9 +21,11 @@ def get_prefix(bot, message):
     return commands.when_mentioned_or(*prefixes)(bot, message)
 
 
-initial_cogs = ['cogs.owner', 'cogs.canvas', 'cogs.friend', 'cogs.ironwork', 'cogs.level', 'cogs.members',
-                'cogs.simple',
-                'cogs.starboard', 'cogs.timer', 'cogs.triumphant', 'cogs.uptime', 'cogs.welcome']
+initial_cogs = ['cogs.owner','cogs.level']
+
+"""['cogs.owner', 'cogs.canvas', 'cogs.friend', 'cogs.ironwork', 'cogs.level', 'cogs.members',
+            'cogs.simple',
+            'cogs.starboard', 'cogs.timer', 'cogs.triumphant', 'cogs.uptime', 'cogs.welcome']"""
 intents = discord.Intents.default()
 intents.members = True
 intents.voice_states = True
