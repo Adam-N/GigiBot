@@ -8,7 +8,7 @@ class Friend(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.command(name='nomean', description="For a friend who's being mean to themself!")
+    @commands.command(name='nomean',aliases = ['yesmean'], description="For a friend who's being mean to themself!")
     async def nomean(self, ctx):
         """This command is for a friend who is being mean to themselves.
         Show them who's boss and cheer them up!"""
@@ -41,6 +41,30 @@ class Friend(commands.Cog):
         embed.description = 'This is for your own good'
         embed.set_image(url=url)
         await ctx.channel.send(embed=embed)
+
+    @commands.command(description="For someone who needs sleep!")
+    async def sleep(self, ctx, member: discord.Member = None):
+        """This command is meant to tell a friend to go to sleep!"""
+        name = ""
+        images = ["https://media1.tenor.com/images/f3fd2914f8db39338263dc7b657bcb43/tenor.gif?itemid=5219925",
+                  "https://media1.tenor.com/images/5fb8a2a7db6ce0715013d870631ab81f/tenor.gif?itemid=6146952",
+                  "https://media1.tenor.com/images/0e19c69eb1d0e6d58f1c8418b8232881/tenor.gif?itemid=15301397",
+                  "https://media.tenor.com/images/11baf16c4029abc97bdae7ff3f6ffe3b/tenor.gif",
+                  "https://media.giphy.com/media/rvxGjhW3TKVeo/source.gif",
+                  "https://i.gifer.com/RLil.gif"]
+        url = random.choice(images)
+        embed = discord.Embed(color=0x00ff00)
+        if member is not None:
+            if member.nick:
+                name = " " +  member.nick
+
+            else:
+                name = " " + member.display_name
+        embed.title = f"Go to sleep{name}!"
+        embed.description = 'This is for your own good'
+        embed.set_image(url=url)
+        await ctx.channel.send(embed=embed)
+
 
 def setup(bot):
     bot.add_cog(Friend(bot))

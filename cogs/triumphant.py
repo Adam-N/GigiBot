@@ -27,6 +27,8 @@ class TriumphantCog(commands.Cog, name='Triumphant'):
                 profiles = json.load(f)
             with open('assets/json/config.json', 'r') as f:
                 config = json.load(f)
+            if emoji.name != '🏆':
+                return
 
             for react in message.reactions:
                 async for user in react.users():
@@ -216,6 +218,8 @@ class TriumphantCog(commands.Cog, name='Triumphant'):
 
     @staticmethod
     async def triumphant_reset(self, server):
+        if server.id == 811378282113138719:
+            return
         with open('assets/json/config.json', 'r') as f:
             config = json.load(f)
         chan = self.bot.get_channel(int(config[str(server.id)]['triumphant']))

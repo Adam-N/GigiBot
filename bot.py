@@ -21,14 +21,13 @@ def get_prefix(bot, message):
     return commands.when_mentioned_or(*prefixes)(bot, message)
 
 
-initial_cogs = ['cogs.owner','cogs.level']
-
-"""['cogs.owner', 'cogs.canvas', 'cogs.friend', 'cogs.ironwork', 'cogs.level', 'cogs.members',
-            'cogs.simple',
-            'cogs.starboard', 'cogs.timer', 'cogs.triumphant', 'cogs.uptime', 'cogs.welcome']"""
+initial_cogs = ['cogs.owner', 'cogs.canvas', 'cogs.friend', 'cogs.ironwork', 'cogs.level', 'cogs.members',
+            'cogs.simple', 'cogs.help', 'cogs.mod',
+            'cogs.starboard', 'cogs.timer', 'cogs.triumphant', 'cogs.uptime', 'cogs.welcome', 'cogs.wish']
 intents = discord.Intents.default()
 intents.members = True
 intents.voice_states = True
+intents.messages = True
 bot = commands.Bot(command_prefix=get_prefix, description='A bot designed for GoldxGuns', intents=intents)
 if __name__ == '__main__':
     for extension in initial_cogs:
@@ -42,9 +41,17 @@ async def daily():
         with open(f'assets/json/config.json', 'r') as f:
             config = json.load(f)
         await LevelCog.remove_birthday(LevelCog(bot), server)
-        await LevelCog.reset_timers(LevelCog(bot), server)
         channel = bot.get_channel(int(config[str(server.id)]['botpost']))
         await channel.send('Ran Daily Reset')
+
+async def utc_daily():
+    """UTC Reset Timer"""
+    for server in bot.guilds:
+        with open(f'assets/json/config.json', 'r') as f:
+            config = json.load(f)
+        await LevelCog.reset_timers(LevelCog(bot), server)
+        channel = bot.get_channel(int(config[str(server.id)]['botpost']))
+        await channel.send('Ran UTC_Daily Reset')
 
 
 async def weekly():
@@ -72,6 +79,7 @@ async def on_ready():
     print(f'\nLogged in as: {bot.user.name} - {bot.user.id}\nVersion: {discord.__version__}')
     print(f'Successfully logged in and booted...!')
     schedule.add_job(daily, 'cron', day='*', hour=23)
+    schedule.add_job(utc_daily, 'cron', day='*', hour=18)
     schedule.add_job(weekly, 'cron', week='*', day_of_week='sun', hour=17)
     schedule.add_job(monthly, 'cron', month='*', day='last')
 

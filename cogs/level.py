@@ -13,6 +13,8 @@ class LevelCog(commands.Cog, name='Levels'):
 
     @commands.Cog.listener()
     async def on_message(self, message):
+        if message.guild.id == 811378282113138719:
+            return
         if not message.author.bot:
             with open(f'assets/json/config.json', 'r') as f:
                 config = json.load(f)
@@ -656,7 +658,7 @@ class LevelCog(commands.Cog, name='Levels'):
                                        "be extra nice today and the year full of happiness and prosperity. "
                                        "Sending love from all of us here at GxG")
         channel = self.bot.get_channel(int(config[str(ctx.message.guild.id)]['general']))
-
+        await channel.send(f'Happy Birthday {member.mention}')
         await channel.send(embed=birthday_embed)
         try:
             users[str(member.id)]["bdaystamp"] = str(dt.datetime.strftime(dt.datetime.utcnow(), "%Y-%m-%d %H:%M:%S"))
@@ -682,6 +684,8 @@ class LevelCog(commands.Cog, name='Levels'):
     async def level_reset(self, server):
         # This is for the monthly reset of the data. It also gives all of the reward roles out
         # It also removes all of the roles from the top 5 as well.
+        if server.id == 811378282113138719:
+            return
         with open(f'assets/json/server/{str(server.id)}/level.json', 'r') as f:
             users = json.load(f)
         with open('assets/json/config.json', 'r') as f:
@@ -754,6 +758,8 @@ class LevelCog(commands.Cog, name='Levels'):
         chan = self.bot.get_channel(config[str(server.id)]['botpost'])
 
     async def remove_birthday(self, server):
+        if server.id == 811378282113138719:
+            return
         with open(f'assets/json/server/{str(server.id)}/level.json', 'r') as f:
             users = json.load(f)
         with open('assets/json/config.json', 'r') as f:
@@ -774,6 +780,8 @@ class LevelCog(commands.Cog, name='Levels'):
                     await chan.send(f"No Timestamp. Removed birthday role from {member.name}")
 
     async def reset_timers(self, server):
+        if server.id == 811378282113138719:
+            return
         with open(f'assets/json/server/{str(server.id)}/level.json', 'r') as f:
             users = json.load(f)
 
