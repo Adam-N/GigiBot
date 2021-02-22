@@ -29,7 +29,7 @@ class Friend(commands.Cog):
             url='https://cdn.discordapp.com/attachments/532380077896237061/791855064804753418/fql8g0wcp1o51.jpg')
         await ctx.channel.send(embed=embed)
 
-    @commands.command(aliases = ['hornyjail','nohorny','horny'], description="For someone who's getting a little lewd.")
+    @commands.command(aliases = ['hornyjail','nohorny','horny','yeshorny'], description="For someone who's getting a little lewd.")
     async def horny_jail(self, ctx):
         """This command is meant for that certain friend who's started themselves down the path of sin. UwU"""
         images = ["https://media.tenor.com/images/f781d9b1bbc4839dff9ad763c28deb46/tenor.gif",
