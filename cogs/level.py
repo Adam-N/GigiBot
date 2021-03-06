@@ -63,9 +63,8 @@ class LevelCog(commands.Cog, name='Levels'):
         with open('assets/json/config.json', 'r') as f:
             config = json.load(f)
         experience = users[str(user.id)]['experience']
-        level_dt = 1.75
         lvl_start = users[str(user.id)]['level']
-        lvl_end = sqrt(((85 ** level_dt) + (experience ** level_dt))) / (85 ** 2) + 1
+        lvl_end = (sqrt(40 + experience) / 115) + 1
         if int(lvl_end) > 5:
             lvl_end = 5
         top_5_dict = {}
@@ -107,23 +106,30 @@ class LevelCog(commands.Cog, name='Levels'):
                     await user.add_roles(discord.utils.get(user.guild.roles, name=f"Level {int(lvl_end)}"))
                 except discord.errors.Forbidden as f:
                     # creating/opening a file
-                    f = open("errors.txt", "a")
+                    file = open("errors.txt", "a")
 
                     # writing in the file
-                    f.write(str(f))
+                    file.write(str(f))
 
                     # closing the file
-                    f.close()
+                    file.close()
+                    pass
 
-        if lvl_end < 2:
-                for i in range(2, 5):
-                    level_check_role = discord.utils.get(user.guild.roles, name=f"Level {int(i)}")
+        for i in range(2, 6):
+            level_check_role = discord.utils.get(user.guild.roles, name=f"Level {int(i)}")
 
-                    if user not in level_check_role.members:
-                        try:
-                            await user.remove_roles(level_check_role)
-                        except discord.Forbidden:
-                            continue
+            if i != int(lvl_end):
+                try:
+                    await user.remove_roles(level_check_role)
+                except discord.Forbidden:
+                    continue
+                except:
+                    continue
+            if i == int(lvl_end) and user not in level_check_role.members:
+                try:
+                    await user.add_roles(level_check_role)
+                except:
+                    continue
 
     @commands.command(aliases=['rank', 'lvl'], description="Returns you or another's current level and XP!")
     async def level(self, ctx, member: discord.Member = None):
@@ -207,10 +213,11 @@ class LevelCog(commands.Cog, name='Levels'):
         elif not os.path.isfile(f'assets/json/server/{str(ctx.guild.id)}/level.json'):
             await ctx.channel.send("File Doesn't Exist")
 
-    @commands.command(aliases=['Thanks','Thank', 'thanks', 'thankyou'], description="Use this to thank a user for "
-                                                                                    "something!")
+    @commands.command(aliases=['Thanks', 'Thank', 'thanks', 'thankyou'], description="Use this to thank a user for "
+                                                                                     "something!")
     async def thank(self, ctx, thankee: discord.Member):
-        """This command is used to thank a user for, well, anything you might want to thank them for! Show your appreciation!"""
+        """This command is used to thank a user for, well, anything you might want to thank them for! Show your
+        appreciation! """
         if thankee.bot:
             return
         with open(f'assets/json/config.json', 'r') as f:
@@ -342,9 +349,9 @@ class LevelCog(commands.Cog, name='Levels'):
             elif arg is None:
                 staff_list = await self.staff_exclusion(ctx.guild)
             else:
-                embed= discord.Embed(title='If you use `all` then everyone including staff will'
-                                           ' show on the leaderboard. If you don\'t want to see staff,'
-                                           ' leave it blank')
+                embed = discord.Embed(title='If you use `all` then everyone including staff will'
+                                            ' show on the leaderboard. If you don\'t want to see staff,'
+                                            ' leave it blank')
                 await ctx.send(embed=embed, delete_after=5)
                 await ctx.message.delete()
                 return
@@ -397,7 +404,8 @@ class LevelCog(commands.Cog, name='Levels'):
             await ctx.send(embed=embed, delete_after=5)
             await ctx.message.delete()
 
-    @commands.command(aliases=['toplevel', 'leaderboard', 'expleader', 'top'], description="Show the leaderboard for server level and XP!")
+    @commands.command(aliases=['toplevel', 'leaderboard', 'expleader', 'top'],
+                      description="Show the leaderboard for server level and XP!")
     async def top_level(self, ctx, arg: str = None):
         """This command will display the leaderboard for XP across the server! Compete with your friends!"""
         if not os.path.isfile(f'assets/json/server/{str(ctx.guild.id)}/level.json'):
@@ -725,14 +733,14 @@ class LevelCog(commands.Cog, name='Levels'):
                 i += 1
         exclusion_list.append(top_exp)
         t = 0
-        top_thanked = list(thanked_dict_sorted)[0]
+        top_thanked = list(thanked_dict_sorted.keys())[0]
         if int(top_thanked) in exclusion_list:
             while int(top_thanked) in exclusion_list:
                 top_thanked = list(thanked_dict_sorted.keys())[t]
                 t += 1
         exclusion_list.append(top_thanked)
         j = 0
-        top_thanks = list(thanks_dict_sorted)[0]
+        top_thanks = list(thanks_dict_sorted.keys())[0]
         if int(top_thanks) in exclusion_list:
             while int(top_thanks) in exclusion_list:
                 top_thanks = list(thanked_dict_sorted.keys())[j]
@@ -770,7 +778,7 @@ class LevelCog(commands.Cog, name='Levels'):
                 try:
                     if dt.datetime.utcnow() >= dt.datetime.strptime(users[str(member.id)]['bdaystamp'],
                                                                     "%Y-%m-%d %H:%M:%S") + dt.timedelta(
-                                                                    hours=18):
+                        hours=18):
                         await member.remove_roles(birthday_role)
                         chan = self.bot.get_channel(int(config[str(server.id)]['botpost']))
                         await chan.send(f"Removed birthday role from {member.name}")
